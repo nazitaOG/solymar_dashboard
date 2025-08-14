@@ -1,0 +1,212 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/* =========================
+   USUARIOS / ROLES (M2M)
+   ========================= */
+
+model User {
+  id             String     @id @default(uuid()) @db.Uuid
+  hashedPassword String
+  email          String     @unique
+  username       String     @unique
+
+  reservations   Reservation[]
+  rolesLink      RoleUser[]
+}
+
+model Role {
+  id          String     @id @default(uuid()) @db.Uuid
+  description String
+
+  usersLink   RoleUser[]
+}
+
+model RoleUser {
+  roleId String @db.Uuid
+  userId String @db.Uuid
+
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, userId]) // PK compuesta
+}
+
+/* =========================
+   RESERVAS E ITEMS
+   ========================= */
+
+model Reservation {
+  id           String      @id @default(uuid()) @db.Uuid
+  userId       String      @db.Uuid
+  uploadDate   DateTime    @default(now())
+  totalPrice   BigInt      @db.BigInt
+  state        String
+
+  user         User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  hotels       Hotel[]
+  planes       Plane[]
+  cruises      Cruise[]
+  transfers    Transfer[]
+  excursions   Excursion[]
+  medicals     MedicalAssist[]
+  paxLinks     PaxReservation[]
+}
+
+model Hotel {
+  id               String      @id @default(uuid()) @db.Uuid
+  startDate        DateTime
+  endDate          DateTime
+  city             String
+  hotelName        String
+  bookingReference String
+  totalPrice       BigInt   @db.BigInt
+  amountPaid       BigInt   @db.BigInt
+  roomType         String
+  provider         String
+  reservationId    String    @db.Uuid
+
+  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+}
+
+model Plane {
+  id               String    @id @default(uuid()) @db.Uuid
+  departure        String
+  arrival          String
+  departureDate    DateTime
+  arrivalDate      DateTime
+  totalPrice       BigInt   @db.BigInt
+  amountPaid       BigInt   @db.BigInt
+  bookingReference String
+  provider         String
+  reservationId    String    @db.Uuid
+
+  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+}
+
+model Cruise {
+  id               String   @id @default(uuid()) @db.Uuid
+  startDate        DateTime
+  bookingReference String
+  provider         String
+  embarkationPort  String
+  arrival          String
+  arrivalPort      String
+  totalPrice       BigInt   @db.BigInt
+  amountPaid       BigInt   @db.BigInt
+  reservationId    String   @db.Uuid
+
+  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+}
+
+model Transfer {
+  id               String   @id @default(uuid()) @db.Uuid
+  pickup           String
+  dropOff          String
+  pickupDate       DateTime
+  bookingReference String
+  provider         String
+  reservationId    String   @db.Uuid
+  totalPrice       BigInt   @db.BigInt
+  amountPaid       BigInt   @db.BigInt
+
+  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+}
+
+model Excursion {
+  id             String   @id @default(uuid()) @db.Uuid
+  totalPrice     BigInt   @db.BigInt
+  amountPaid     BigInt   @db.BigInt
+  provider       String
+  excursionDate  DateTime
+  excursionName  String
+  reservationId  String   @db.Uuid
+
+  reservation    Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+}
+
+model MedicalAssist {
+  id               String   @id @default(uuid()) @db.Uuid
+  totalPrice       BigInt   @db.BigInt
+  amountPaid       BigInt   @db.BigInt
+  bookingReference String
+  assistType       String
+  provider         String
+  reservationId    String   @db.Uuid
+
+  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+}
+
+/* =========================
+   PAX / DOCUMENTOS (1–1 estricto con FK en documentos)
+   ========================= */
+
+model Pax {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  birthDate   DateTime
+  nationality String
+
+  // Importante: al estar la FK del lado de los documentos,
+  // el lado inverso DEBE ser opcional en Prisma.
+  passport    Passport?
+  dni         Dni?
+
+  reservations PaxReservation[]
+}
+
+model Passport {
+  id             String   @id @default(uuid()) @db.Uuid
+  passportNum    String   @unique
+  expirationDate DateTime
+
+  // FK obligatoria hacia Pax (1–1)
+  paxId          String   @unique @db.Uuid
+  pax            Pax      @relation(fields: [paxId], references: [id], onDelete: Cascade)
+}
+
+model Dni {
+  id             String   @id @default(uuid()) @db.Uuid
+  dniNum         String   @unique
+  expirationDate DateTime
+
+  // FK obligatoria hacia Pax (1–1)
+  paxId          String   @unique @db.Uuid
+  pax            Pax      @relation(fields: [paxId], references: [id], onDelete: Cascade)
+}
+
+/* =========================
+   JOIN PAX <-> RESERVATION
+   ========================= */
+
+model PaxReservation {
+  id            String @id @default(uuid()) @db.Uuid
+  paxId         String @db.Uuid
+  reservationId String @db.Uuid
+
+  pax           Pax         @relation(fields: [paxId], references: [id], onDelete: Cascade)
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@unique([paxId, reservationId]) // evita duplicar pax en la misma reserva
+  @@index([reservationId])
+  @@index([paxId])
+}
