@@ -8,6 +8,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ReservationState {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
 /* =========================
    USUARIOS / ROLES (M2M)
    ========================= */
@@ -48,7 +54,7 @@ model Reservation {
   userId       String      @db.Uuid
   uploadDate   DateTime    @default(now())
   totalPrice   BigInt      @db.BigInt
-  state        String
+  state        ReservationState  @default(PENDING)
 
   user         User        @relation(fields: [userId], references: [id], onDelete: Restrict)
   hotels       Hotel[]

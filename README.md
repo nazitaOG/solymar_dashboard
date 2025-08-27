@@ -33,3 +33,22 @@ docker compose logs -f app
 
 # 5) Probar en el navegador / client HTTP
 http://localhost:3000
+
+
+## 🚀 Correr el proyecto en local
+
+### 1) Instalar dependencias
+```bash
+pnpm install
+
+### 2) LEVANTAR LA DB CON DOCKER
+docker compose up -d db
+
+### 3) Ejecutar migraciones y generar prisma client
+pnpm prisma migrate dev
+pnpm prisma generate
+
+### 1) Correr en locakl
+pnpm start:dev
+
+
