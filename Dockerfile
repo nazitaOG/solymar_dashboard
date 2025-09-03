@@ -42,4 +42,4 @@ COPY --chown=appuser:appuser package.json ./
 ENV PORT=3000
 EXPOSE 3000
 ENTRYPOINT ["/usr/bin/tini","--"]
-CMD ["bash","-lc","npx prisma migrate deploy && node dist/main.js"]
+CMD ["bash","-lc","pnpm dlx prisma migrate deploy && node dist/main.js"]

@@ -1,10 +1,9 @@
-import { PrismaClient, ReservationState } from '@prisma/client';
+import { PrismaClient, Prisma, ReservationState } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // 0) LIMPIEZA en orden seguro por FKs (o usá migrate reset y te ahorrás esto)
   await prisma.$transaction([
     prisma.roleUser.deleteMany({}),
     prisma.hotel.deleteMany({}),
@@ -22,13 +21,11 @@ async function main() {
     prisma.user.deleteMany({}),
   ]);
 
-  // 1) ROLES
   const [adminRole, userRole] = await Promise.all([
     prisma.role.create({ data: { description: 'Admin' } }),
     prisma.role.create({ data: { description: 'User' } }),
   ]);
 
-  // 2) USUARIO
   const user = await prisma.user.create({
     data: {
       email: 'user@example.com',
@@ -48,23 +45,18 @@ async function main() {
   await prisma.roleUser.create({
     data: { roleId: adminRole.id, userId: admin.id },
   });
-
-  // 3) VÍNCULO USER-ROLE (User)
   await prisma.roleUser.create({
     data: { roleId: userRole.id, userId: user.id },
   });
 
-  // 4) RESERVA
   const reservation = await prisma.reservation.create({
     data: {
       userId: user.id,
-      totalPrice: 120000n, // BigInt
+      totalPrice: new Prisma.Decimal('120000.00'),
       state: ReservationState.CONFIRMED,
-      // uploadDate: now() por default
     },
   });
 
-  // 5) SERVICIOS
   await prisma.hotel.create({
     data: {
       reservationId: reservation.id,
@@ -73,8 +65,8 @@ async function main() {
       city: 'Buenos Aires',
       hotelName: 'Hotel Central',
       bookingReference: 'HOTEL-123',
-      totalPrice: 80000n,
-      amountPaid: 40000n,
+      totalPrice: new Prisma.Decimal('80000.00'),
+      amountPaid: new Prisma.Decimal('40000.00'),
       roomType: 'Doble',
       provider: 'Booking.com',
     },
@@ -87,8 +79,8 @@ async function main() {
       arrival: 'MIA',
       departureDate: new Date('2025-11-01T20:00:00Z'),
       arrivalDate: new Date('2025-11-02T05:00:00Z'),
-      totalPrice: 30000n,
-      amountPaid: 30000n,
+      totalPrice: new Prisma.Decimal('30000.00'),
+      amountPaid: new Prisma.Decimal('30000.00'),
       bookingReference: 'PLN-456',
       provider: 'Aerolíneas',
     },
@@ -102,8 +94,8 @@ async function main() {
       pickupDate: new Date('2025-11-02T06:30:00Z'),
       bookingReference: 'TRF-555',
       provider: 'Shuttle Co.',
-      totalPrice: 5000n,
-      amountPaid: 5000n,
+      totalPrice: new Prisma.Decimal('5000.00'),
+      amountPaid: new Prisma.Decimal('5000.00'),
     },
   });
 
@@ -113,8 +105,8 @@ async function main() {
       provider: 'City Tours',
       excursionName: 'City Highlights',
       excursionDate: new Date('2025-11-05T14:00:00Z'),
-      totalPrice: 7000n,
-      amountPaid: 0n,
+      totalPrice: new Prisma.Decimal('7000.00'),
+      amountPaid: new Prisma.Decimal('0.00'),
     },
   });
 
@@ -124,12 +116,11 @@ async function main() {
       bookingReference: 'MED-777',
       assistType: 'Full',
       provider: 'AssistCard',
-      totalPrice: 8000n,
-      amountPaid: 8000n,
+      totalPrice: new Prisma.Decimal('8000.00'),
+      amountPaid: new Prisma.Decimal('8000.00'),
     },
   });
 
-  // 6) PAX + DOCUMENTOS + LINK A RESERVA
   const pax = await prisma.pax.create({
     data: {
       name: 'Juan Pérez',
