@@ -4,7 +4,13 @@ import { AppService } from './app.service';
 import { ReservationsModule } from './reservations/reservations.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
-import { PaxModule } from './pax/pax.module';
+import { PaxModule } from './paxs/paxs.module';
+import { HotelsModule } from './hotels/hotels.module';
+import { PlanesModule } from './planes/planes.module';
+import { CruisesModule } from './cruises/cruises.module';
+import { TransfersModule } from './transfers/transfers.module';
+import { ExcursionsModule } from './excursions/excursions.module';
+import { MedicalAssistsModule } from './medical_assists/medical_assists.module';
 
 @Module({
   imports: [
@@ -15,6 +21,12 @@ import { PaxModule } from './pax/pax.module';
       envFilePath: ['.env'],
     }),
     PaxModule,
+    HotelsModule,
+    PlanesModule,
+    CruisesModule,
+    TransfersModule,
+    ExcursionsModule,
+    MedicalAssistsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -8,7 +8,7 @@ import {
   Delete,
   ParseIntPipe,
 } from '@nestjs/common';
-import { PaxService } from './pax.service';
+import { PaxService } from './paxs.service';
 import { CreatePaxDto } from './dto/create-pax.dto';
 import { UpdatePaxDto } from './dto/update-pax.dto';
 

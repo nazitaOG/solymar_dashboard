@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { PaxService } from './pax.service';
-import { PaxController } from './pax.controller';
+import { PaxService } from './paxs.service';
+import { PaxController } from './paxs.controller';
 
 @Module({
   controllers: [PaxController],
