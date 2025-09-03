@@ -1,6 +1,6 @@
 # ---- Build stage ----
 
-FROM node:22-bookworm-slim AS builder
+FROM node:22.19.0-alpine3.22 AS builder
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 RUN corepack prepare pnpm@9.12.0 --activate
@@ -21,7 +21,7 @@ RUN pnpm prune --prod
 
 # ---- Runtime stage ----
 
-FROM node:22-bookworm-slim AS runner
+FROM node:22.19.0-alpine3.22 AS runner
 ENV NODE_ENV=production
 ENV TZ=America/Argentina/Buenos_Aires
 STOPSIGNAL SIGINT
