@@ -14,94 +14,98 @@ enum ReservationState {
   CANCELLED
 }
 
-/* =========================
-   USUARIOS / ROLES (M2M)
-   ========================= */
+/**
+ * =========================
+ * USUARIOS / ROLES (M2M)
+ * =========================
+ */
 
 model User {
-  id             String     @id @default(uuid()) @db.Uuid
+  id             String   @id @default(uuid()) @db.Uuid
   hashedPassword String
-  email          String     @unique
-  username       String     @unique
-  uploadDate   DateTime    @default(now())
+  email          String   @unique
+  username       String   @unique
+  uploadDate     DateTime @default(now())
 
-  reservations   Reservation[]
-  rolesLink      RoleUser[]
+  reservations Reservation[]
+  roleUsers    RoleUser[]
 }
 
 model Role {
-  id          String     @id @default(uuid()) @db.Uuid
+  id          String   @id @default(uuid()) @db.Uuid
   description String
-  uploadDate   DateTime    @default(now())
+  uploadDate  DateTime @default(now())
 
-  usersLink   RoleUser[]
+  roleUsers RoleUser[]
 }
 
 model RoleUser {
-  roleId String @db.Uuid
-  userId String @db.Uuid
-  uploadDate   DateTime    @default(now())
+  roleId     String   @db.Uuid
+  userId     String   @db.Uuid
+  uploadDate DateTime @default(now())
 
-  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([roleId, userId]) // PK compuesta
 }
 
-/* =========================
-   RESERVAS E ITEMS
-   ========================= */
+/**
+ * =========================
+ * RESERVAS E ITEMS
+ * =========================
+ */
 
 model Reservation {
-  id           String      @id @default(uuid()) @db.Uuid
-  userId       String      @db.Uuid
-  uploadDate   DateTime    @default(now())
-  totalPrice   Decimal @db.Decimal(18, 2)
-  state        ReservationState  @default(PENDING)
+  id         String           @id @default(uuid()) @db.Uuid
+  userId     String           @db.Uuid
+  uploadDate DateTime         @default(now())
+  totalPrice Decimal          @db.Decimal(18, 2)
+  state      ReservationState @default(PENDING)
 
-  user         User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  hotels       Hotel[]
-  planes       Plane[]
-  cruises      Cruise[]
-  transfers    Transfer[]
-  excursions   Excursion[]
-  medicals     MedicalAssist[]
-  paxLinks     PaxReservation[]
+  user            User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  hotels          Hotel[]
+  planes          Plane[]
+  cruises         Cruise[]
+  transfers       Transfer[]
+  excursions      Excursion[]
+  medicalAssists  MedicalAssist[]
+  paxReservations PaxReservation[]
 }
 
 model Hotel {
-  id               String      @id @default(uuid()) @db.Uuid
+  id               String   @id @default(uuid()) @db.Uuid
   startDate        DateTime
   endDate          DateTime
   city             String
   hotelName        String
   bookingReference String
-  totalPrice       Decimal @db.Decimal(18, 2)
-  amountPaid       Decimal @db.Decimal(18, 2)
+  totalPrice       Decimal  @db.Decimal(18, 2)
+  amountPaid       Decimal  @db.Decimal(18, 2)
   roomType         String
   provider         String
-  reservationId    String    @db.Uuid
-  uploadDate   DateTime    @default(now())
+  reservationId    String   @db.Uuid
+  uploadDate       DateTime @default(now())
 
-  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
 }
 
 model Plane {
-  id               String    @id @default(uuid()) @db.Uuid
+  id               String   @id @default(uuid()) @db.Uuid
   departure        String
   arrival          String
   departureDate    DateTime
   arrivalDate      DateTime
-  totalPrice       Decimal @db.Decimal(18, 2)
-  amountPaid       Decimal @db.Decimal(18, 2)
+  totalPrice       Decimal  @db.Decimal(18, 2)
+  amountPaid       Decimal  @db.Decimal(18, 2)
   bookingReference String
   provider         String
-  reservationId    String    @db.Uuid
-  uploadDate   DateTime    @default(now())
+  reservationId    String   @db.Uuid
+  uploadDate       DateTime @default(now())
 
-  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
 }
@@ -114,12 +118,12 @@ model Cruise {
   embarkationPort  String
   arrival          String
   arrivalPort      String
-  totalPrice       Decimal @db.Decimal(18, 2)
-  amountPaid       Decimal @db.Decimal(18, 2)
+  totalPrice       Decimal  @db.Decimal(18, 2)
+  amountPaid       Decimal  @db.Decimal(18, 2)
   reservationId    String   @db.Uuid
-  uploadDate   DateTime    @default(now())
+  uploadDate       DateTime @default(now())
 
-  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
 }
@@ -132,100 +136,100 @@ model Transfer {
   bookingReference String
   provider         String
   reservationId    String   @db.Uuid
-  totalPrice       Decimal @db.Decimal(18, 2)
-  amountPaid       Decimal @db.Decimal(18, 2)
-  uploadDate   DateTime    @default(now())
+  totalPrice       Decimal  @db.Decimal(18, 2)
+  amountPaid       Decimal  @db.Decimal(18, 2)
+  uploadDate       DateTime @default(now())
 
-  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
 }
 
 model Excursion {
-  id             String   @id @default(uuid()) @db.Uuid
-  totalPrice     Decimal @db.Decimal(18, 2)
-  amountPaid     Decimal @db.Decimal(18, 2)
-  provider       String
-  excursionDate  DateTime
-  excursionName  String
-  reservationId  String   @db.Uuid
-  uploadDate   DateTime    @default(now())
+  id            String   @id @default(uuid()) @db.Uuid
+  totalPrice    Decimal  @db.Decimal(18, 2)
+  amountPaid    Decimal  @db.Decimal(18, 2)
+  provider      String
+  excursionDate DateTime
+  excursionName String
+  reservationId String   @db.Uuid
+  uploadDate    DateTime @default(now())
 
-  reservation    Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
 }
 
 model MedicalAssist {
   id               String   @id @default(uuid()) @db.Uuid
-  totalPrice       Decimal @db.Decimal(18, 2)
-  amountPaid       Decimal @db.Decimal(18, 2)
+  totalPrice       Decimal  @db.Decimal(18, 2)
+  amountPaid       Decimal  @db.Decimal(18, 2)
   bookingReference String
   assistType       String
   provider         String
   reservationId    String   @db.Uuid
-  uploadDate   DateTime    @default(now())
+  uploadDate       DateTime @default(now())
 
-  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
 }
 
-/* =========================
-   PAX / DOCUMENTOS (1–1 estricto con FK en documentos)
-   ========================= */
+/**
+ * =========================
+ * PAX / DOCUMENTOS (1–1)
+ * =========================
+ */
 
 model Pax {
   id          String   @id @default(uuid()) @db.Uuid
   name        String
   birthDate   DateTime
   nationality String
-  uploadDate   DateTime    @default(now())
+  uploadDate  DateTime @default(now())
 
-  // Importante: al estar la FK del lado de los documentos,
-  // el lado inverso DEBE ser opcional en Prisma.
-  passport    Passport?
-  dni         Dni?
+  passport Passport?
+  dni      Dni?
 
-  reservations PaxReservation[]
+  paxReservations PaxReservation[]
 }
 
 model Passport {
   id             String   @id @default(uuid()) @db.Uuid
   passportNum    String   @unique
   expirationDate DateTime
-  uploadDate   DateTime    @default(now())
+  uploadDate     DateTime @default(now())
 
-  // FK obligatoria hacia Pax (1–1)
-  paxId          String   @unique @db.Uuid
-  pax            Pax      @relation(fields: [paxId], references: [id], onDelete: Cascade)
+  paxId String @unique @db.Uuid
+  pax   Pax    @relation(fields: [paxId], references: [id], onDelete: Cascade)
 }
 
 model Dni {
   id             String   @id @default(uuid()) @db.Uuid
   dniNum         String   @unique
   expirationDate DateTime
-  uploadDate   DateTime    @default(now())
+  uploadDate     DateTime @default(now())
 
-  // FK obligatoria hacia Pax (1–1)
-  paxId          String   @unique @db.Uuid
-  pax            Pax      @relation(fields: [paxId], references: [id], onDelete: Cascade)
+  paxId String @unique @db.Uuid
+  pax   Pax    @relation(fields: [paxId], references: [id], onDelete: Cascade)
 }
 
-/* =========================
-   JOIN PAX <-> RESERVATION
-   ========================= */
+/**
+ * =========================
+ * JOIN PAX <-> RESERVATION
+ * =========================
+ */
 
 model PaxReservation {
-  id            String @id @default(uuid()) @db.Uuid
-  paxId         String @db.Uuid
-  reservationId String @db.Uuid
-  uploadDate   DateTime    @default(now())
+  id            String   @id @default(uuid()) @db.Uuid
+  paxId         String   @db.Uuid
+  reservationId String   @db.Uuid
+  uploadDate    DateTime @default(now())
 
-  pax           Pax         @relation(fields: [paxId], references: [id], onDelete: Cascade)
-  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  pax         Pax         @relation(fields: [paxId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
-  @@unique([paxId, reservationId]) // evita duplicar pax en la misma reserva
+  @@unique([paxId, reservationId])
   @@index([reservationId])
   @@index([paxId])
 }

@@ -9,7 +9,7 @@ export class PaxService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(dto: CreatePaxDto) {
-    return HandleRequest.prisma(async () => {
+    return HandleRequest.prisma(() => {
       // Validaciones de negocio
       const wantsPassport =
         dto.passportNum != null || dto.passportExpirationDate != null;
@@ -60,7 +60,7 @@ export class PaxService {
     });
   }
 
-  async findAll() {
+  findAll() {
     return HandleRequest.prisma(() =>
       this.prisma.pax.findMany({
         orderBy: { uploadDate: 'desc' },
@@ -81,7 +81,7 @@ export class PaxService {
   }
 
   update(id: string, updatePaxDto: UpdatePaxDto) {
-    return HandleRequest.prisma(async () =>
+    return HandleRequest.prisma(() =>
       this.prisma.pax.update({
         where: { id },
         data: {
@@ -163,7 +163,7 @@ export class PaxService {
   }
 
   remove(id: string) {
-    return HandleRequest.prisma(async () =>
+    return HandleRequest.prisma(() =>
       this.prisma.pax.delete({
         where: { id },
         include: { passport: true, dni: true },
