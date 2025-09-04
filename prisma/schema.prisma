@@ -113,10 +113,10 @@ model Plane {
 model Cruise {
   id               String   @id @default(uuid()) @db.Uuid
   startDate        DateTime
+  endDate          DateTime
   bookingReference String
   provider         String
   embarkationPort  String
-  arrival          String
   arrivalPort      String
   totalPrice       Decimal  @db.Decimal(18, 2)
   amountPaid       Decimal  @db.Decimal(18, 2)

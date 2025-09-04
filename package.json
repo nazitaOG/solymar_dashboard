@@ -23,7 +23,7 @@
     "prisma:seed": "prisma db seed"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "node dist/prisma/seed.js || ts-node -T prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

@@ -1,9 +1,12 @@
+/// <reference types="node" />
+
 import { PrismaClient, Prisma, ReservationState } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  // Limpieza en orden seguro (FKs)
   await prisma.$transaction([
     prisma.roleUser.deleteMany({}),
     prisma.hotel.deleteMany({}),
@@ -21,34 +24,39 @@ async function main() {
     prisma.user.deleteMany({}),
   ]);
 
+  // Roles
   const [adminRole, userRole] = await Promise.all([
     prisma.role.create({ data: { description: 'Admin' } }),
     prisma.role.create({ data: { description: 'User' } }),
   ]);
 
-  const user = await prisma.user.create({
-    data: {
-      email: 'user@example.com',
-      username: 'user123',
-      hashedPassword: await bcrypt.hash('password123', 10),
-    },
+  // Users
+  const [user, admin] = await Promise.all([
+    prisma.user.create({
+      data: {
+        email: 'user@example.com',
+        username: 'user123',
+        hashedPassword: await bcrypt.hash('password123', 10),
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: 'admin@example.com',
+        username: 'admin123',
+        hashedPassword: await bcrypt.hash('password123', 10),
+      },
+    }),
+  ]);
+
+  await prisma.roleUser.createMany({
+    data: [
+      { roleId: adminRole.id, userId: admin.id },
+      { roleId: userRole.id, userId: user.id },
+    ],
+    skipDuplicates: true,
   });
 
-  const admin = await prisma.user.create({
-    data: {
-      email: 'admin@example.com',
-      username: 'admin123',
-      hashedPassword: await bcrypt.hash('password123', 10),
-    },
-  });
-
-  await prisma.roleUser.create({
-    data: { roleId: adminRole.id, userId: admin.id },
-  });
-  await prisma.roleUser.create({
-    data: { roleId: userRole.id, userId: user.id },
-  });
-
+  // Reserva principal
   const reservation = await prisma.reservation.create({
     data: {
       userId: user.id,
@@ -57,6 +65,7 @@ async function main() {
     },
   });
 
+  // Ítems de la reserva
   await prisma.hotel.create({
     data: {
       reservationId: reservation.id,
@@ -83,6 +92,20 @@ async function main() {
       amountPaid: new Prisma.Decimal('30000.00'),
       bookingReference: 'PLN-456',
       provider: 'Aerolíneas',
+    },
+  });
+
+  await prisma.cruise.create({
+    data: {
+      reservationId: reservation.id,
+      startDate: new Date('2025-11-03T17:00:00Z'),
+      endDate: new Date('2025-11-08T08:00:00Z'),
+      embarkationPort: 'Miami',
+      arrivalPort: 'Cozumel',
+      bookingReference: 'CRS-999',
+      provider: 'Royal',
+      totalPrice: new Prisma.Decimal('20000.00'),
+      amountPaid: new Prisma.Decimal('10000.00'),
     },
   });
 
@@ -121,32 +144,50 @@ async function main() {
     },
   });
 
-  const pax = await prisma.pax.create({
-    data: {
-      name: 'Juan Pérez',
-      birthDate: new Date('1990-05-10'),
-      nationality: 'Argentina',
-    },
-  });
+  // Pax con documentos (nested create para cumplir trigger de "pax con docs")
+  const [pax1, pax2] = await Promise.all([
+    prisma.pax.create({
+      data: {
+        name: 'Juan Pérez',
+        birthDate: new Date('1990-05-10T12:00:00Z'),
+        nationality: 'Argentina',
+        dni: {
+          create: {
+            dniNum: '12345678',
+            expirationDate: new Date('2030-01-01T12:00:00Z'),
+          },
+        },
+        passport: {
+          create: {
+            passportNum: 'AA1234567',
+            expirationDate: new Date('2031-03-01T12:00:00Z'),
+          },
+        },
+      },
+    }),
+    prisma.pax.create({
+      data: {
+        name: 'Ana Gómez',
+        birthDate: new Date('1992-07-10T12:00:00Z'),
+        nationality: 'Argentina',
+        // solo DNI
+        dni: {
+          create: {
+            dniNum: '35123456',
+            expirationDate: new Date('2029-10-20T12:00:00Z'),
+          },
+        },
+      },
+    }),
+  ]);
 
-  await prisma.dni.create({
-    data: {
-      dniNum: '12345678',
-      expirationDate: new Date('2030-01-01'),
-      paxId: pax.id,
-    },
-  });
-
-  await prisma.passport.create({
-    data: {
-      passportNum: 'AA1234567',
-      expirationDate: new Date('2031-03-01'),
-      paxId: pax.id,
-    },
-  });
-
-  await prisma.paxReservation.create({
-    data: { paxId: pax.id, reservationId: reservation.id },
+  // Vincular pax a la reserva
+  await prisma.paxReservation.createMany({
+    data: [
+      { paxId: pax1.id, reservationId: reservation.id },
+      { paxId: pax2.id, reservationId: reservation.id },
+    ],
+    skipDuplicates: true,
   });
 
   console.log('✅ Seed completado (limpia + crea).');

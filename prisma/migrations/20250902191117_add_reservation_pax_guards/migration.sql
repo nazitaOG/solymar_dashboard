@@ -14,7 +14,7 @@ BEGIN
   FROM "Reservation" r
   WHERE r.id = COALESCE(NEW."reservationId", OLD."reservationId") -- COALESCE es una funcion que devuelve el primer argumento que no es NULL (si NEW es NULL, devuelve OLD)
     AND NOT EXISTS (
-      SELECT 1 FROM "PaxReservation" pr WHERE pr."reservationId" = r.id -- not exists es una restriccion que no permite que se inserten pasajeros en una reserva que ya tiene pasajeros
+      SELECT 1 FROM "PaxReservation" pr WHERE pr."reservationId" = r.id 
     );
 
   IF FOUND THEN
