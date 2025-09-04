@@ -1,26 +1,49 @@
 import { Injectable } from '@nestjs/common';
 import { CreateMedicalAssistDto } from './dto/create-medical_assist.dto';
 import { UpdateMedicalAssistDto } from './dto/update-medical_assist.dto';
+import { PrismaService } from '../common/prisma/prisma.service';
+import { HandleRequest } from '../common/utils/handle-request';
 
 @Injectable()
 export class MedicalAssistsService {
+  constructor(private readonly prisma: PrismaService) {}
+
   create(createMedicalAssistDto: CreateMedicalAssistDto) {
-    return 'This action adds a new medicalAssist';
+    return HandleRequest.prisma(() => {
+      return this.prisma.medicalAssist.create({
+        data: createMedicalAssistDto,
+      });
+    });
   }
 
   findAll() {
-    return `This action returns all medicalAssists`;
+    return HandleRequest.prisma(() => {
+      return this.prisma.medicalAssist.findMany();
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} medicalAssist`;
+  findOne(id: string) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.medicalAssist.findUniqueOrThrow({
+        where: { id },
+      });
+    });
   }
 
-  update(id: number, updateMedicalAssistDto: UpdateMedicalAssistDto) {
-    return `This action updates a #${id} medicalAssist`;
+  update(id: string, updateMedicalAssistDto: UpdateMedicalAssistDto) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.medicalAssist.update({
+        where: { id },
+        data: updateMedicalAssistDto,
+      });
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} medicalAssist`;
+  remove(id: string) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.medicalAssist.delete({
+        where: { id },
+      });
+    });
   }
 }

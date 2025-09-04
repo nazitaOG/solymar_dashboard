@@ -6,7 +6,7 @@ import {
   Patch,
   Param,
   Delete,
-  ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { PaxService } from './paxs.service';
 import { CreatePaxDto } from './dto/create-pax.dto';
@@ -27,20 +27,20 @@ export class PaxController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.paxService.findOne(id);
   }
 
   @Patch(':id')
   update(
-    @Param('id', ParseIntPipe) id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updatePaxDto: UpdatePaxDto,
   ) {
     return this.paxService.update(id, updatePaxDto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.paxService.remove(id);
   }
 }

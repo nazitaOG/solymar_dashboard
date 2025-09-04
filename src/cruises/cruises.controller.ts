@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { CruisesService } from './cruises.service';
 import { CreateCruiseDto } from './dto/create-cruise.dto';
 import { UpdateCruiseDto } from './dto/update-cruise.dto';
@@ -18,17 +27,20 @@ export class CruisesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.cruisesService.findOne(+id);
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.cruisesService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCruiseDto: UpdateCruiseDto) {
-    return this.cruisesService.update(+id, updateCruiseDto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateCruiseDto: UpdateCruiseDto,
+  ) {
+    return this.cruisesService.update(id, updateCruiseDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.cruisesService.remove(+id);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.cruisesService.remove(id);
   }
 }

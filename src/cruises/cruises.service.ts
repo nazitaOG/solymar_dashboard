@@ -1,26 +1,49 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCruiseDto } from './dto/create-cruise.dto';
 import { UpdateCruiseDto } from './dto/update-cruise.dto';
+import { PrismaService } from '../common/prisma/prisma.service';
+import { HandleRequest } from '../common/utils/handle-request';
 
 @Injectable()
 export class CruisesService {
+  constructor(private readonly prisma: PrismaService) {}
+
   create(createCruiseDto: CreateCruiseDto) {
-    return 'This action adds a new cruise';
+    return HandleRequest.prisma(() => {
+      return this.prisma.cruise.create({
+        data: createCruiseDto,
+      });
+    });
   }
 
   findAll() {
-    return `This action returns all cruises`;
+    return HandleRequest.prisma(() => {
+      return this.prisma.cruise.findMany();
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} cruise`;
+  findOne(id: string) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.cruise.findUniqueOrThrow({
+        where: { id },
+      });
+    });
   }
 
-  update(id: number, updateCruiseDto: UpdateCruiseDto) {
-    return `This action updates a #${id} cruise`;
+  update(id: string, updateCruiseDto: UpdateCruiseDto) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.cruise.update({
+        where: { id },
+        data: updateCruiseDto,
+      });
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} cruise`;
+  remove(id: string) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.cruise.delete({
+        where: { id },
+      });
+    });
   }
 }

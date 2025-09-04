@@ -1,26 +1,49 @@
 import { Injectable } from '@nestjs/common';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
+import { PrismaService } from '../common/prisma/prisma.service';
+import { HandleRequest } from '../common/utils/handle-request';
 
 @Injectable()
 export class HotelsService {
+  constructor(private readonly prisma: PrismaService) {}
+
   create(createHotelDto: CreateHotelDto) {
-    return 'This action adds a new hotel';
+    return HandleRequest.prisma(() => {
+      return this.prisma.hotel.create({
+        data: createHotelDto,
+      });
+    });
   }
 
   findAll() {
-    return `This action returns all hotels`;
+    return HandleRequest.prisma(() => {
+      return this.prisma.hotel.findMany();
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} hotel`;
+  findOne(id: string) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.hotel.findUniqueOrThrow({
+        where: { id },
+      });
+    });
   }
 
-  update(id: number, updateHotelDto: UpdateHotelDto) {
-    return `This action updates a #${id} hotel`;
+  update(id: string, updateHotelDto: UpdateHotelDto) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.hotel.update({
+        where: { id },
+        data: updateHotelDto,
+      });
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} hotel`;
+  remove(id: string) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.hotel.delete({
+        where: { id },
+      });
+    });
   }
 }

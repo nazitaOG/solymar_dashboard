@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { ExcursionsService } from './excursions.service';
 import { CreateExcursionDto } from './dto/create-excursion.dto';
 import { UpdateExcursionDto } from './dto/update-excursion.dto';
@@ -18,17 +27,20 @@ export class ExcursionsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.excursionsService.findOne(+id);
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.excursionsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateExcursionDto: UpdateExcursionDto) {
-    return this.excursionsService.update(+id, updateExcursionDto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateExcursionDto: UpdateExcursionDto,
+  ) {
+    return this.excursionsService.update(id, updateExcursionDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.excursionsService.remove(+id);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.excursionsService.remove(id);
   }
 }

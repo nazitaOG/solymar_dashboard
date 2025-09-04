@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { MedicalAssistsService } from './medical_assists.service';
 import { CreateMedicalAssistDto } from './dto/create-medical_assist.dto';
 import { UpdateMedicalAssistDto } from './dto/update-medical_assist.dto';
@@ -18,17 +27,20 @@ export class MedicalAssistsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.medicalAssistsService.findOne(+id);
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.medicalAssistsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMedicalAssistDto: UpdateMedicalAssistDto) {
-    return this.medicalAssistsService.update(+id, updateMedicalAssistDto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateMedicalAssistDto: UpdateMedicalAssistDto,
+  ) {
+    return this.medicalAssistsService.update(id, updateMedicalAssistDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.medicalAssistsService.remove(+id);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.medicalAssistsService.remove(id);
   }
 }
