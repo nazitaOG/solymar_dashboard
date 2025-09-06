@@ -15,11 +15,11 @@ export class TransfersService {
     });
   }
 
-  findAll() {
-    return HandleRequest.prisma(() => {
-      return this.prisma.transfer.findMany();
-    });
-  }
+  // findAll() {
+  //   return HandleRequest.prisma(() => {
+  //     return this.prisma.transfer.findMany();
+  //   });
+  // }
 
   findOne(id: string) {
     return HandleRequest.prisma(() => {

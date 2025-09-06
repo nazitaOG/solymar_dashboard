@@ -21,10 +21,10 @@ export class TransfersController {
     return this.transfersService.create(createTransferDto);
   }
 
-  @Get()
-  findAll() {
-    return this.transfersService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.transfersService.findAll();
+  // }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {

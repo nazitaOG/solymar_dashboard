@@ -16,11 +16,11 @@ export class HotelsService {
     });
   }
 
-  findAll() {
-    return HandleRequest.prisma(() => {
-      return this.prisma.hotel.findMany();
-    });
-  }
+  // findAll() {
+  //   return HandleRequest.prisma(() => {
+  //     return this.prisma.hotel.findMany();
+  //   });
+  // }
 
   findOne(id: string) {
     return HandleRequest.prisma(() => {

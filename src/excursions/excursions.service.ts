@@ -16,11 +16,11 @@ export class ExcursionsService {
     });
   }
 
-  findAll() {
-    return HandleRequest.prisma(() => {
-      return this.prisma.excursion.findMany();
-    });
-  }
+  // findAll() {
+  //   return HandleRequest.prisma(() => {
+  //     return this.prisma.excursion.findMany();
+  //   });
+  // }
 
   findOne(id: string) {
     return HandleRequest.prisma(() => {

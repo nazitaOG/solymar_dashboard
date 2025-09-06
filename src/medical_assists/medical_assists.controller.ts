@@ -21,10 +21,10 @@ export class MedicalAssistsController {
     return this.medicalAssistsService.create(createMedicalAssistDto);
   }
 
-  @Get()
-  findAll() {
-    return this.medicalAssistsService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.medicalAssistsService.findAll();
+  // }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {

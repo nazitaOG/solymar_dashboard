@@ -5,6 +5,7 @@ import {
   IsUUID,
   Max,
   Min,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateCruiseDto {
@@ -12,6 +13,7 @@ export class CreateCruiseDto {
   startDate: Date;
 
   @IsDateString()
+  @IsOptional()
   endDate: Date;
 
   @IsString()
@@ -24,6 +26,7 @@ export class CreateCruiseDto {
   embarkationPort: string;
 
   @IsString()
+  @IsOptional()
   arrivalPort: string;
 
   @IsNumber()

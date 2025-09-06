@@ -21,10 +21,10 @@ export class HotelsController {
     return this.hotelsService.create(createHotelDto);
   }
 
-  @Get()
-  findAll() {
-    return this.hotelsService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.hotelsService.findAll();
+  // }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {

@@ -16,11 +16,11 @@ export class MedicalAssistsService {
     });
   }
 
-  findAll() {
-    return HandleRequest.prisma(() => {
-      return this.prisma.medicalAssist.findMany();
-    });
-  }
+  // findAll() {
+  //   return HandleRequest.prisma(() => {
+  //     return this.prisma.medicalAssist.findMany();
+  //   });
+  // }
 
   findOne(id: string) {
     return HandleRequest.prisma(() => {

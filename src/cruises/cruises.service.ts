@@ -16,11 +16,11 @@ export class CruisesService {
     });
   }
 
-  findAll() {
-    return HandleRequest.prisma(() => {
-      return this.prisma.cruise.findMany();
-    });
-  }
+  // findAll() {
+  //   return HandleRequest.prisma(() => {
+  //     return this.prisma.cruise.findMany();
+  //   });
+  // }
 
   findOne(id: string) {
     return HandleRequest.prisma(() => {

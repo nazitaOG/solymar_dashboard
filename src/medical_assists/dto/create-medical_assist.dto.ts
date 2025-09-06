@@ -1,4 +1,11 @@
-import { IsNumber, Min, Max, IsString, IsUUID } from 'class-validator';
+import {
+  IsNumber,
+  Min,
+  Max,
+  IsString,
+  IsUUID,
+  IsOptional,
+} from 'class-validator';
 
 export class CreateMedicalAssistDto {
   @IsNumber()
@@ -15,6 +22,7 @@ export class CreateMedicalAssistDto {
   bookingReference: string;
 
   @IsString()
+  @IsOptional()
   assistType: string;
 
   @IsString()

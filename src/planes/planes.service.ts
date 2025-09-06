@@ -1,26 +1,49 @@
 import { Injectable } from '@nestjs/common';
 import { CreatePlaneDto } from './dto/create-plane.dto';
 import { UpdatePlaneDto } from './dto/update-plane.dto';
+import { PrismaService } from '../common/prisma/prisma.service';
+import { HandleRequest } from '../common/utils/handle-request';
 
 @Injectable()
 export class PlanesService {
+  constructor(private readonly prisma: PrismaService) {}
+
   create(createPlaneDto: CreatePlaneDto) {
-    return 'This action adds a new plane';
+    return HandleRequest.prisma(() => {
+      return this.prisma.plane.create({
+        data: createPlaneDto,
+      });
+    });
   }
 
   findAll() {
-    return `This action returns all planes`;
+    return HandleRequest.prisma(() => {
+      return this.prisma.plane.findMany();
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} plane`;
+  findOne(id: string) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.plane.findUniqueOrThrow({
+        where: { id },
+      });
+    });
   }
 
-  update(id: number, updatePlaneDto: UpdatePlaneDto) {
-    return `This action updates a #${id} plane`;
+  update(id: string, updatePlaneDto: UpdatePlaneDto) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.plane.update({
+        where: { id },
+        data: updatePlaneDto,
+      });
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} plane`;
+  remove(id: string) {
+    return HandleRequest.prisma(() => {
+      return this.prisma.plane.delete({
+        where: { id },
+      });
+    });
   }
 }

@@ -21,10 +21,10 @@ export class CruisesController {
     return this.cruisesService.create(createCruiseDto);
   }
 
-  @Get()
-  findAll() {
-    return this.cruisesService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.cruisesService.findAll();
+  // }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {

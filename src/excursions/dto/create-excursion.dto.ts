@@ -27,6 +27,8 @@ export class CreateExcursionDto {
   @IsString()
   excursionName: string;
 
+  //donde se recoge el pasajero falta
+
   @IsUUID()
   reservationId: string;
 }

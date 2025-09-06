@@ -21,10 +21,10 @@ export class ExcursionsController {
     return this.excursionsService.create(createExcursionDto);
   }
 
-  @Get()
-  findAll() {
-    return this.excursionsService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.excursionsService.findAll();
+  // }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {

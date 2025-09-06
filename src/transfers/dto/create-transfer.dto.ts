@@ -5,13 +5,17 @@ import {
   IsNumber,
   Min,
   Max,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateTransferDto {
+  //falta tipo, tren bus, taxi
+
   @IsString()
   pickup: string;
 
   @IsString()
+  @IsOptional()
   dropOff: string;
 
   @IsDateString()
