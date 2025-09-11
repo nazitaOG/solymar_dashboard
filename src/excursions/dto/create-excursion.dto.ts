@@ -19,6 +19,9 @@ export class CreateExcursionDto {
   amountPaid: number;
 
   @IsString()
+  origin: string;
+
+  @IsString()
   provider: string;
 
   @IsDateString()
@@ -26,8 +29,6 @@ export class CreateExcursionDto {
 
   @IsString()
   excursionName: string;
-
-  //donde se recoge el pasajero falta
 
   @IsUUID()
   reservationId: string;

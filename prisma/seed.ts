@@ -1,12 +1,17 @@
 /// <reference types="node" />
 
-import { PrismaClient, Prisma, ReservationState } from '@prisma/client';
+import {
+  PrismaClient,
+  Prisma,
+  ReservationState,
+  TransportType,
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Limpieza en orden seguro (FKs)
+  // Limpieza en orden seguro (FKs primero)
   await prisma.$transaction([
     prisma.roleUser.deleteMany({}),
     prisma.hotel.deleteMany({}),
@@ -65,7 +70,7 @@ async function main() {
     },
   });
 
-  // Ítems de la reserva
+  // Hotel
   await prisma.hotel.create({
     data: {
       reservationId: reservation.id,
@@ -81,6 +86,7 @@ async function main() {
     },
   });
 
+  // Vuelo (arrival/arrivalDate/provider ahora pueden ser opcionales, pero los cargamos igual)
   await prisma.plane.create({
     data: {
       reservationId: reservation.id,
@@ -91,10 +97,12 @@ async function main() {
       totalPrice: new Prisma.Decimal('30000.00'),
       amountPaid: new Prisma.Decimal('30000.00'),
       bookingReference: 'PLN-456',
-      provider: 'Aerolíneas',
+      provider: 'Aerolíneas Argentinas',
+      notes: 'Asiento 12A, equipaje incluido.',
     },
   });
 
+  // Crucero (endDate/arrivalPort son opcionales)
   await prisma.cruise.create({
     data: {
       reservationId: reservation.id,
@@ -103,28 +111,48 @@ async function main() {
       embarkationPort: 'Miami',
       arrivalPort: 'Cozumel',
       bookingReference: 'CRS-999',
-      provider: 'Royal',
+      provider: 'Royal Caribbean',
       totalPrice: new Prisma.Decimal('20000.00'),
       amountPaid: new Prisma.Decimal('10000.00'),
     },
   });
 
+  // Transfers (nuevo modelo: origin/destination/departureDate/arrivalDate:string/transportType)
   await prisma.transfer.create({
     data: {
       reservationId: reservation.id,
-      pickup: 'Aeropuerto MIA',
-      dropOff: 'Hotel Central',
-      pickupDate: new Date('2025-11-02T06:30:00Z'),
-      bookingReference: 'TRF-555',
+      origin: 'Aeropuerto MIA',
+      destination: 'Hotel Central',
+      departureDate: new Date('2025-11-02T06:30:00Z'),
+      // arrivalDate es String en el schema → le pasamos texto (ISO o "07:10")
+      arrivalDate: '2025-11-02T07:10:00Z',
       provider: 'Shuttle Co.',
       totalPrice: new Prisma.Decimal('5000.00'),
       amountPaid: new Prisma.Decimal('5000.00'),
+      transportType: TransportType.PICKUP,
     },
   });
 
+  // Ejemplo extra de BUS
+  await prisma.transfer.create({
+    data: {
+      reservationId: reservation.id,
+      origin: 'Miami Downtown',
+      destination: 'Orlando Station',
+      departureDate: new Date('2025-11-06T08:00:00Z'),
+      arrivalDate: '2025-11-06T12:15:00Z',
+      provider: 'Greyhound',
+      totalPrice: new Prisma.Decimal('3000.00'),
+      amountPaid: new Prisma.Decimal('3000.00'),
+      transportType: TransportType.BUS,
+    },
+  });
+
+  // Excursión (ahora requiere origin)
   await prisma.excursion.create({
     data: {
       reservationId: reservation.id,
+      origin: 'Miami',
       provider: 'City Tours',
       excursionName: 'City Highlights',
       excursionDate: new Date('2025-11-05T14:00:00Z'),
@@ -133,6 +161,7 @@ async function main() {
     },
   });
 
+  // Asistencia médica (assistType es opcional)
   await prisma.medicalAssist.create({
     data: {
       reservationId: reservation.id,
@@ -144,23 +173,23 @@ async function main() {
     },
   });
 
-  // Pax con documentos (nested create para cumplir trigger de "pax con docs")
+  // Pax con documentos (cumple los triggers "pax con docs")
   const [pax1, pax2] = await Promise.all([
     prisma.pax.create({
       data: {
         name: 'Juan Pérez',
-        birthDate: new Date('1990-05-10T12:00:00Z'),
+        birthDate: new Date('1990-05-10T00:00:00Z'),
         nationality: 'Argentina',
         dni: {
           create: {
             dniNum: '12345678',
-            expirationDate: new Date('2030-01-01T12:00:00Z'),
+            expirationDate: new Date('2030-01-01T00:00:00Z'),
           },
         },
         passport: {
           create: {
             passportNum: 'AA1234567',
-            expirationDate: new Date('2031-03-01T12:00:00Z'),
+            expirationDate: new Date('2031-03-01T00:00:00Z'),
           },
         },
       },
@@ -168,13 +197,12 @@ async function main() {
     prisma.pax.create({
       data: {
         name: 'Ana Gómez',
-        birthDate: new Date('1992-07-10T12:00:00Z'),
+        birthDate: new Date('1992-07-10T00:00:00Z'),
         nationality: 'Argentina',
-        // solo DNI
         dni: {
           create: {
             dniNum: '35123456',
-            expirationDate: new Date('2029-10-20T12:00:00Z'),
+            expirationDate: new Date('2029-10-20T00:00:00Z'),
           },
         },
       },

@@ -40,7 +40,9 @@ export class CreatePlaneDto {
   @Max(Number.MAX_SAFE_INTEGER)
   amountPaid: number;
 
-  //custom notes falta
+  @IsString()
+  @IsOptional()
+  notes: string;
 
   @IsUUID()
   reservationId: string;

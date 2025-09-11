@@ -6,10 +6,13 @@ import {
   Min,
   Max,
   IsOptional,
+  IsEnum,
 } from 'class-validator';
+import { TransportType } from '../../common/enums/transport-type.enum';
 
 export class CreateTransferDto {
-  //falta tipo, tren bus, taxi
+  @IsEnum(TransportType)
+  transportType: TransportType;
 
   @IsString()
   pickup: string;

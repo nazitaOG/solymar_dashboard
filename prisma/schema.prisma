@@ -14,6 +14,14 @@ enum ReservationState {
   CANCELLED
 }
 
+enum TransportType {
+  PICKUP
+  BUS
+  TRAIN
+  FERRY
+  OTHER
+}
+
 /**
  * =========================
  * USUARIOS / ROLES (M2M)
@@ -93,17 +101,18 @@ model Hotel {
 }
 
 model Plane {
-  id               String   @id @default(uuid()) @db.Uuid
+  id               String    @id @default(uuid()) @db.Uuid
   departure        String
-  arrival          String
+  arrival          String?
   departureDate    DateTime
-  arrivalDate      DateTime
-  totalPrice       Decimal  @db.Decimal(18, 2)
-  amountPaid       Decimal  @db.Decimal(18, 2)
+  arrivalDate      DateTime?
+  totalPrice       Decimal   @db.Decimal(18, 2)
+  amountPaid       Decimal   @db.Decimal(18, 2)
   bookingReference String
-  provider         String
-  reservationId    String   @db.Uuid
-  uploadDate       DateTime @default(now())
+  provider         String?
+  notes            String?   @db.Text
+  reservationId    String    @db.Uuid
+  uploadDate       DateTime  @default(now())
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -111,17 +120,17 @@ model Plane {
 }
 
 model Cruise {
-  id               String   @id @default(uuid()) @db.Uuid
+  id               String    @id @default(uuid()) @db.Uuid
   startDate        DateTime
-  endDate          DateTime
+  endDate          DateTime?
   bookingReference String
   provider         String
   embarkationPort  String
-  arrivalPort      String
-  totalPrice       Decimal  @db.Decimal(18, 2)
-  amountPaid       Decimal  @db.Decimal(18, 2)
-  reservationId    String   @db.Uuid
-  uploadDate       DateTime @default(now())
+  arrivalPort      String?
+  totalPrice       Decimal   @db.Decimal(18, 2)
+  amountPaid       Decimal   @db.Decimal(18, 2)
+  reservationId    String    @db.Uuid
+  uploadDate       DateTime  @default(now())
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -129,16 +138,17 @@ model Cruise {
 }
 
 model Transfer {
-  id               String   @id @default(uuid()) @db.Uuid
-  pickup           String
-  dropOff          String
-  pickupDate       DateTime
-  bookingReference String
-  provider         String
-  reservationId    String   @db.Uuid
-  totalPrice       Decimal  @db.Decimal(18, 2)
-  amountPaid       Decimal  @db.Decimal(18, 2)
-  uploadDate       DateTime @default(now())
+  id            String        @id @default(uuid()) @db.Uuid
+  origin        String
+  destination   String?
+  departureDate DateTime
+  arrivalDate   String
+  provider      String
+  reservationId String        @db.Uuid
+  totalPrice    Decimal       @db.Decimal(18, 2)
+  amountPaid    Decimal       @db.Decimal(18, 2)
+  uploadDate    DateTime      @default(now())
+  transportType TransportType @default(PICKUP)
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -149,6 +159,7 @@ model Excursion {
   id            String   @id @default(uuid()) @db.Uuid
   totalPrice    Decimal  @db.Decimal(18, 2)
   amountPaid    Decimal  @db.Decimal(18, 2)
+  origin        String
   provider      String
   excursionDate DateTime
   excursionName String
@@ -165,7 +176,7 @@ model MedicalAssist {
   totalPrice       Decimal  @db.Decimal(18, 2)
   amountPaid       Decimal  @db.Decimal(18, 2)
   bookingReference String
-  assistType       String
+  assistType       String?
   provider         String
   reservationId    String   @db.Uuid
   uploadDate       DateTime @default(now())
