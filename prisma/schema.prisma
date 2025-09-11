@@ -138,17 +138,18 @@ model Cruise {
 }
 
 model Transfer {
-  id            String        @id @default(uuid()) @db.Uuid
-  origin        String
-  destination   String?
-  departureDate DateTime
-  arrivalDate   String
-  provider      String
-  reservationId String        @db.Uuid
-  totalPrice    Decimal       @db.Decimal(18, 2)
-  amountPaid    Decimal       @db.Decimal(18, 2)
-  uploadDate    DateTime      @default(now())
-  transportType TransportType @default(PICKUP)
+  id               String        @id @default(uuid()) @db.Uuid
+  origin           String
+  destination      String?
+  departureDate    DateTime
+  bookingReference String?     
+  arrivalDate      String
+  provider         String
+  reservationId    String        @db.Uuid
+  totalPrice       Decimal       @db.Decimal(18, 2)
+  amountPaid       Decimal       @db.Decimal(18, 2)
+  uploadDate       DateTime      @default(now())
+  transportType    TransportType @default(PICKUP)
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -156,15 +157,16 @@ model Transfer {
 }
 
 model Excursion {
-  id            String   @id @default(uuid()) @db.Uuid
-  totalPrice    Decimal  @db.Decimal(18, 2)
-  amountPaid    Decimal  @db.Decimal(18, 2)
-  origin        String
-  provider      String
-  excursionDate DateTime
-  excursionName String
-  reservationId String   @db.Uuid
-  uploadDate    DateTime @default(now())
+  id               String   @id @default(uuid()) @db.Uuid
+  totalPrice       Decimal  @db.Decimal(18, 2)
+  amountPaid       Decimal  @db.Decimal(18, 2)
+  origin           String
+  provider         String
+  bookingReference String?   
+  excursionDate    DateTime
+  excursionName    String
+  reservationId    String   @db.Uuid
+  uploadDate       DateTime @default(now())
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 

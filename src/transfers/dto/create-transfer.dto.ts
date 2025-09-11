@@ -1,37 +1,42 @@
 import {
   IsDateString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
   IsString,
   IsUUID,
-  IsNumber,
-  Min,
   Max,
-  IsOptional,
-  IsEnum,
+  Min,
 } from 'class-validator';
-import { TransportType } from '../../common/enums/transport-type.enum';
+import { TransportType } from '@prisma/client';
 
 export class CreateTransferDto {
-  @IsEnum(TransportType)
-  transportType: TransportType;
-
   @IsString()
-  pickup: string;
+  origin: string;
 
-  @IsString()
   @IsOptional()
-  dropOff: string;
+  @IsString()
+  destination?: string;
 
   @IsDateString()
-  pickupDate: Date;
+  departureDate: string;
 
-  @IsString()
-  bookingReference: string;
+  @IsDateString()
+  arrivalDate: string;
 
   @IsString()
   provider: string;
 
+  @IsOptional()
+  @IsString()
+  bookingReference?: string;
+
   @IsUUID()
   reservationId: string;
+
+  @IsEnum(TransportType)
+  @IsOptional()
+  transportType?: TransportType;
 
   @IsNumber()
   @Min(0)

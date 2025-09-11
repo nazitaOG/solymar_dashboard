@@ -10,9 +10,20 @@ export class ExcursionsService {
 
   create(createExcursionDto: CreateExcursionDto) {
     return HandleRequest.prisma(() => {
-      return this.prisma.excursion.create({
-        data: createExcursionDto,
-      });
+      return HandleRequest.prisma(() =>
+        this.prisma.excursion.create({
+          data: {
+            totalPrice: createExcursionDto.totalPrice,
+            amountPaid: createExcursionDto.amountPaid,
+            origin: createExcursionDto.origin,
+            provider: createExcursionDto.provider,
+            bookingReference: createExcursionDto.bookingReference ?? undefined,
+            excursionDate: new Date(createExcursionDto.excursionDate),
+            excursionName: createExcursionDto.excursionName,
+            reservationId: createExcursionDto.reservationId,
+          },
+        }),
+      );
     });
   }
 
@@ -32,10 +43,30 @@ export class ExcursionsService {
 
   update(id: string, updateExcursionDto: UpdateExcursionDto) {
     return HandleRequest.prisma(() => {
-      return this.prisma.excursion.update({
-        where: { id },
-        data: updateExcursionDto,
-      });
+      return HandleRequest.prisma(() =>
+        this.prisma.excursion.update({
+          where: { id },
+          data: {
+            totalPrice:
+              typeof updateExcursionDto.totalPrice === 'number'
+                ? updateExcursionDto.totalPrice
+                : undefined,
+            amountPaid:
+              typeof updateExcursionDto.amountPaid === 'number'
+                ? updateExcursionDto.amountPaid
+                : undefined,
+            origin: updateExcursionDto.origin ?? undefined,
+            provider: updateExcursionDto.provider ?? undefined,
+            bookingReference: updateExcursionDto.bookingReference ?? undefined,
+            excursionDate:
+              updateExcursionDto.excursionDate !== undefined
+                ? new Date(updateExcursionDto.excursionDate)
+                : undefined,
+            excursionName: updateExcursionDto.excursionName ?? undefined,
+            reservationId: updateExcursionDto.reservationId ?? undefined,
+          },
+        }),
+      );
     });
   }
 

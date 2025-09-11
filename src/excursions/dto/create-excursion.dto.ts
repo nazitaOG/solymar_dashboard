@@ -5,6 +5,7 @@ import {
   IsString,
   IsDateString,
   IsUUID,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateExcursionDto {
@@ -23,6 +24,10 @@ export class CreateExcursionDto {
 
   @IsString()
   provider: string;
+
+  @IsOptional()
+  @IsString()
+  bookingReference?: string;
 
   @IsDateString()
   excursionDate: Date;
