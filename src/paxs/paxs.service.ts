@@ -3,33 +3,24 @@ import { CreatePaxDto } from './dto/create-pax.dto';
 import { UpdatePaxDto } from './dto/update-pax.dto';
 import { HandleRequest } from '../common/utils/handle-request';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { PaxPolicies } from './policies/pax.policies';
+import { providedPair } from '../common/utils/value-guards';
 
 @Injectable()
 export class PaxService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(dto: CreatePaxDto) {
-    return HandleRequest.prisma(() => {
-      // Validaciones de negocio
-      const wantsPassport =
-        dto.passportNum != null || dto.passportExpirationDate != null;
-      const wantsDni = dto.dniNum != null || dto.dniExpirationDate != null;
+  async create(dto: CreatePaxDto) {
+    return HandleRequest.prisma(async () => {
+      // Validaciones de negocio centralizadas
+      PaxPolicies.assertCreate(dto);
 
-      if (!wantsPassport && !wantsDni) {
-        throw new BadRequestException(
-          'El pasajero debe tener al menos un documento (DNI o Pasaporte).',
-        );
-      }
-      if (wantsPassport && (!dto.passportNum || !dto.passportExpirationDate)) {
-        throw new BadRequestException(
-          'Pasaporte: número y fecha de expiración son requeridos juntos.',
-        );
-      }
-      if (wantsDni && (!dto.dniNum || !dto.dniExpirationDate)) {
-        throw new BadRequestException(
-          'DNI: número y fecha de expiración son requeridos juntos.',
-        );
-      }
+      const hasPassport = providedPair(
+        dto.passportNum,
+        dto.passportExpirationDate,
+      );
+      const hasDni = providedPair(dto.dniNum, dto.dniExpirationDate);
+
       return this.prisma.pax.create({
         data: {
           name: dto.name,
@@ -37,7 +28,7 @@ export class PaxService {
           nationality: dto.nationality,
           // uploadDate lo setea la DB con @default(now())
 
-          passport: wantsPassport
+          passport: hasPassport
             ? {
                 create: {
                   passportNum: dto.passportNum!, // ya validado arriba
@@ -46,7 +37,7 @@ export class PaxService {
               }
             : undefined,
 
-          dni: wantsDni
+          dni: hasDni
             ? {
                 create: {
                   dniNum: dto.dniNum!, // ya validado arriba
@@ -60,16 +51,16 @@ export class PaxService {
     });
   }
 
-  findAll() {
-    return HandleRequest.prisma(() =>
+  async findAll() {
+    return HandleRequest.prisma(async () =>
       this.prisma.pax.findMany({
         orderBy: { uploadDate: 'desc' },
       }),
     );
   }
 
-  findOne(id: string) {
-    return HandleRequest.prisma(() =>
+  async findOne(id: string) {
+    return HandleRequest.prisma(async () =>
       this.prisma.pax.findUniqueOrThrow({
         where: { id },
         include: {
@@ -80,9 +71,10 @@ export class PaxService {
     );
   }
 
-  update(id: string, updatePaxDto: UpdatePaxDto) {
-    return HandleRequest.prisma(() =>
-      this.prisma.pax.update({
+  async update(id: string, updatePaxDto: UpdatePaxDto) {
+    return HandleRequest.prisma(async () => {
+      PaxPolicies.assertUpdate(updatePaxDto);
+      return this.prisma.pax.update({
         where: { id },
         data: {
           name: updatePaxDto.name ?? undefined,
@@ -158,12 +150,12 @@ export class PaxService {
               : undefined,
         },
         include: { passport: true, dni: true },
-      }),
-    );
+      });
+    });
   }
 
-  remove(id: string) {
-    return HandleRequest.prisma(() =>
+  async remove(id: string) {
+    return HandleRequest.prisma(async () =>
       this.prisma.pax.delete({
         where: { id },
         include: { passport: true, dni: true },
