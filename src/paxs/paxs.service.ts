@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreatePaxDto } from './dto/create-pax.dto';
 import { UpdatePaxDto } from './dto/update-pax.dto';
-import { HandleRequest } from '../common/utils/handle-request';
+import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { PaxPolicies } from './policies/pax.policies';
 import { providedPair } from '../common/utils/value-guards';
@@ -10,8 +10,8 @@ import { providedPair } from '../common/utils/value-guards';
 export class PaxService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreatePaxDto) {
-    return HandleRequest.prisma(async () => {
+  create(dto: CreatePaxDto) {
+    return handleRequest(() => {
       // Validaciones de negocio centralizadas
       PaxPolicies.assertCreate(dto);
 
@@ -51,16 +51,16 @@ export class PaxService {
     });
   }
 
-  async findAll() {
-    return HandleRequest.prisma(async () =>
+  findAll() {
+    return handleRequest(() =>
       this.prisma.pax.findMany({
         orderBy: { uploadDate: 'desc' },
       }),
     );
   }
 
-  async findOne(id: string) {
-    return HandleRequest.prisma(async () =>
+  findOne(id: string) {
+    return handleRequest(() =>
       this.prisma.pax.findUniqueOrThrow({
         where: { id },
         include: {
@@ -71,8 +71,8 @@ export class PaxService {
     );
   }
 
-  async update(id: string, updatePaxDto: UpdatePaxDto) {
-    return HandleRequest.prisma(async () => {
+  update(id: string, updatePaxDto: UpdatePaxDto) {
+    return handleRequest(() => {
       PaxPolicies.assertUpdate(updatePaxDto);
       return this.prisma.pax.update({
         where: { id },
@@ -154,8 +154,8 @@ export class PaxService {
     });
   }
 
-  async remove(id: string) {
-    return HandleRequest.prisma(async () =>
+  remove(id: string) {
+    return handleRequest(() =>
       this.prisma.pax.delete({
         where: { id },
         include: { passport: true, dni: true },

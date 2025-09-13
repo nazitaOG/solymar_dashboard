@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { HandleRequest } from '../common/utils/handle-request';
+import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 
@@ -9,7 +9,7 @@ export class ReservationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(dto: CreateReservationDto) {
-    return HandleRequest.prisma(() =>
+    return handleRequest(() =>
       this.prisma.$transaction(async (tx) => {
         const paxIds = [...new Set(dto.paxIds)];
 
@@ -49,7 +49,7 @@ export class ReservationsService {
   }
 
   findAll() {
-    return HandleRequest.prisma(() =>
+    return handleRequest(() =>
       this.prisma.reservation.findMany({
         orderBy: { uploadDate: 'desc' },
         include: {
@@ -64,7 +64,7 @@ export class ReservationsService {
   }
 
   findOne(id: string) {
-    return HandleRequest.prisma(() =>
+    return handleRequest(() =>
       this.prisma.reservation.findUniqueOrThrow({
         where: { id },
         include: {
@@ -79,7 +79,7 @@ export class ReservationsService {
   }
 
   update(id: string, dto: UpdateReservationDto) {
-    return HandleRequest.prisma(() =>
+    return handleRequest(() =>
       this.prisma.reservation.update({
         where: { id },
         data: {
@@ -100,7 +100,7 @@ export class ReservationsService {
   }
 
   remove(id: string) {
-    return HandleRequest.prisma(() =>
+    return handleRequest(() =>
       this.prisma.reservation.delete({
         where: { id },
         include: {

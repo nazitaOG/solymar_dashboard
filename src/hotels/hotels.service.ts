@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { HandleRequest } from '../common/utils/handle-request';
+import { handleRequest } from '../common/utils/handle-request/handle-request';
 
 @Injectable()
 export class HotelsService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(createHotelDto: CreateHotelDto) {
-    return HandleRequest.prisma(() => {
+    return handleRequest(() => {
       return this.prisma.hotel.create({
         data: createHotelDto,
       });
@@ -17,13 +17,13 @@ export class HotelsService {
   }
 
   // findAll() {
-  //   return HandleRequest.prisma(() => {
+  //   return handleRequest(() => {
   //     return this.prisma.hotel.findMany();
   //   });
   // }
 
   findOne(id: string) {
-    return HandleRequest.prisma(() => {
+    return handleRequest(() => {
       return this.prisma.hotel.findUniqueOrThrow({
         where: { id },
       });
@@ -31,7 +31,7 @@ export class HotelsService {
   }
 
   update(id: string, updateHotelDto: UpdateHotelDto) {
-    return HandleRequest.prisma(() => {
+    return handleRequest(() => {
       return this.prisma.hotel.update({
         where: { id },
         data: updateHotelDto,
@@ -40,7 +40,7 @@ export class HotelsService {
   }
 
   remove(id: string) {
-    return HandleRequest.prisma(() => {
+    return handleRequest(() => {
       return this.prisma.hotel.delete({
         where: { id },
       });
