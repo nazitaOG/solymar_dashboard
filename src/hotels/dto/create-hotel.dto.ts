@@ -1,26 +1,35 @@
 import {
-  IsDateString,
+  IsDate,
   IsNumber,
   IsString,
   IsUUID,
   Min,
   Max,
+  IsNotEmpty,
 } from 'class-validator';
+import { ToDateDay } from '../../common/decorators/date.transformers';
+import { Type } from 'class-transformer';
 
 export class CreateHotelDto {
-  @IsDateString()
+  @IsDate()
+  @Type(() => Date)
+  @ToDateDay()
   startDate: Date;
 
-  @IsDateString()
+  @IsDate()
+  @Type(() => Date)
+  @ToDateDay()
   endDate: Date;
 
   @IsString()
   city: string;
 
   @IsString()
+  @IsNotEmpty()
   hotelName: string;
 
   @IsString()
+  @IsNotEmpty()
   bookingReference: string;
 
   @IsNumber()
@@ -34,9 +43,11 @@ export class CreateHotelDto {
   amountPaid: number;
 
   @IsString()
+  @IsNotEmpty()
   roomType: string;
 
   @IsString()
+  @IsNotEmpty()
   provider: string;
 
   @IsUUID()
