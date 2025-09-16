@@ -3,26 +3,34 @@ import { CreateExcursionDto } from './dto/create-excursion.dto';
 import { UpdateExcursionDto } from './dto/update-excursion.dto';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { CommonPricePolicies } from '../common/policies/price.policies';
 
 @Injectable()
 export class ExcursionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(createExcursionDto: CreateExcursionDto) {
-    return handleRequest(() =>
-      this.prisma.excursion.create({
+    return handleRequest(async () => {
+      CommonPricePolicies.assertCreatePrice(
+        createExcursionDto,
+        'totalPrice',
+        'amountPaid',
+        { labels: { total: 'total', paid: 'pagado' } },
+      );
+
+      return this.prisma.excursion.create({
         data: {
           totalPrice: createExcursionDto.totalPrice,
           amountPaid: createExcursionDto.amountPaid,
           origin: createExcursionDto.origin,
           provider: createExcursionDto.provider,
           bookingReference: createExcursionDto.bookingReference ?? undefined,
-          excursionDate: new Date(createExcursionDto.excursionDate),
+          excursionDate: createExcursionDto.excursionDate,
           excursionName: createExcursionDto.excursionName,
           reservationId: createExcursionDto.reservationId,
         },
-      }),
-    );
+      });
+    });
   }
 
   // findAll() {
@@ -40,8 +48,21 @@ export class ExcursionsService {
   }
 
   update(id: string, updateExcursionDto: UpdateExcursionDto) {
-    return handleRequest(() =>
-      this.prisma.excursion.update({
+    return handleRequest(async () => {
+      const current = await this.prisma.excursion.findUniqueOrThrow({
+        where: { id },
+        select: { totalPrice: true, amountPaid: true },
+      });
+
+      CommonPricePolicies.assertUpdatePrice(
+        updateExcursionDto,
+        { total: current.totalPrice, paid: current.amountPaid },
+        'totalPrice',
+        'amountPaid',
+        { labels: { total: 'total', paid: 'pagado' } },
+      );
+
+      return this.prisma.excursion.update({
         where: { id },
         data: {
           totalPrice:
@@ -59,8 +80,8 @@ export class ExcursionsService {
           excursionName: updateExcursionDto.excursionName ?? undefined,
           reservationId: updateExcursionDto.reservationId ?? undefined,
         },
-      }),
-    );
+      });
+    });
   }
 
   remove(id: string) {

@@ -20,7 +20,6 @@ export class CreateReservationDto {
   @Max(Number.MAX_SAFE_INTEGER)
   totalPrice: number;
 
-  @Type(() => Number)
   @IsEnum(ReservationState)
   state: ReservationState;
 

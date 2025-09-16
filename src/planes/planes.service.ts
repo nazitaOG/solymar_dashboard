@@ -3,8 +3,9 @@ import { CreatePlaneDto } from './dto/create-plane.dto';
 import { UpdatePlaneDto } from './dto/update-plane.dto';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
-import { CommonDatePolicies } from '../common/policies/common-date.policies';
-import { PlanesPolicies } from './policies/planes.policies';
+import { CommonDatePolicies } from '../common/policies/date.policies';
+import { CommonOriginDestinationPolicies } from '../common/policies/origin-destination.policies';
+import { CommonPricePolicies } from '../common/policies/price.policies';
 
 @Injectable()
 export class PlanesService {
@@ -12,7 +13,17 @@ export class PlanesService {
 
   create(createPlaneDto: CreatePlaneDto) {
     return handleRequest(() => {
-      PlanesPolicies.assertAirports(createPlaneDto);
+      CommonOriginDestinationPolicies.assertCreateDifferent(
+        createPlaneDto,
+        'departure',
+        'arrival',
+        {
+          required: 'any',
+          labels: { a: 'salida', b: 'llegada' },
+          ignoreCase: true,
+          trim: true,
+        },
+      );
       CommonDatePolicies.assertUpdateRange(
         createPlaneDto,
         {
@@ -30,8 +41,25 @@ export class PlanesService {
           },
         },
       );
+      CommonPricePolicies.assertCreatePrice(
+        createPlaneDto,
+        'totalPrice',
+        'amountPaid',
+        { labels: { total: 'total', paid: 'pagado' } },
+      );
       return this.prisma.plane.create({
-        data: createPlaneDto,
+        data: {
+          departure: createPlaneDto.departure,
+          arrival: createPlaneDto.arrival ?? undefined,
+          departureDate: createPlaneDto.departureDate,
+          arrivalDate: createPlaneDto.arrivalDate ?? undefined,
+          bookingReference: createPlaneDto.bookingReference,
+          provider: createPlaneDto.provider ?? undefined,
+          totalPrice: createPlaneDto.totalPrice,
+          amountPaid: createPlaneDto.amountPaid,
+          notes: createPlaneDto.notes ?? undefined,
+          reservationId: createPlaneDto.reservationId,
+        },
       });
     });
   }
@@ -59,13 +87,22 @@ export class PlanesService {
           arrivalDate: true,
           departure: true,
           arrival: true,
+          totalPrice: true,
+          amountPaid: true,
         },
       });
 
-      PlanesPolicies.assertAirports(
+      CommonOriginDestinationPolicies.assertUpdateDifferent(
         updatePlaneDto,
-        current.departure ?? undefined,
-        current.arrival ?? undefined,
+        { a: current.departure, b: current.arrival },
+        'departure',
+        'arrival',
+        {
+          required: 'any',
+          labels: { a: 'salida', b: 'llegada' },
+          ignoreCase: true,
+          trim: true,
+        },
       );
 
       CommonDatePolicies.assertUpdateRange(
@@ -83,9 +120,34 @@ export class PlanesService {
         },
       );
 
+      CommonPricePolicies.assertUpdatePrice(
+        updatePlaneDto,
+        { total: current.totalPrice, paid: current.amountPaid },
+        'totalPrice',
+        'amountPaid',
+        { labels: { total: 'total', paid: 'pagado' } },
+      );
+
       return this.prisma.plane.update({
         where: { id },
-        data: updatePlaneDto,
+        data: {
+          departure: updatePlaneDto.departure ?? undefined,
+          arrival: updatePlaneDto.arrival ?? undefined,
+          departureDate: updatePlaneDto.departureDate ?? undefined,
+          arrivalDate: updatePlaneDto.arrivalDate ?? undefined,
+          bookingReference: updatePlaneDto.bookingReference ?? undefined,
+          provider: updatePlaneDto.provider ?? undefined,
+          totalPrice:
+            typeof updatePlaneDto.totalPrice === 'number'
+              ? updatePlaneDto.totalPrice
+              : undefined,
+          amountPaid:
+            typeof updatePlaneDto.amountPaid === 'number'
+              ? updatePlaneDto.amountPaid
+              : undefined,
+          notes: updatePlaneDto.notes ?? undefined,
+          reservationId: updatePlaneDto.reservationId ?? undefined,
+        },
       });
     });
   }

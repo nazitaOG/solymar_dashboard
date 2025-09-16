@@ -31,12 +31,12 @@ export class CreateTransferDto {
   @Type(() => Date)
   @ToDateDay()
   @IsDate()
-  departureDate: string;
+  departureDate: Date;
 
   @Type(() => Date)
   @ToDateDay()
   @IsDate()
-  arrivalDate: string;
+  arrivalDate: Date;
 
   @Transform(toTrim, { toClassOnly: true })
   @IsString()

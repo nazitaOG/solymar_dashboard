@@ -3,7 +3,8 @@ import { CreateHotelDto } from './dto/create-hotel.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
-import { CommonDatePolicies } from '../common/policies/common-date.policies';
+import { CommonDatePolicies } from '../common/policies/date.policies';
+import { CommonPricePolicies } from '../common/policies/price.policies';
 
 @Injectable()
 export class HotelsService {
@@ -23,8 +24,27 @@ export class HotelsService {
           },
         },
       );
+
+      CommonPricePolicies.assertCreatePrice(
+        createHotelDto,
+        'totalPrice',
+        'amountPaid',
+        { labels: { total: 'total', paid: 'pagado' } },
+      );
+
       return this.prisma.hotel.create({
-        data: createHotelDto,
+        data: {
+          startDate: createHotelDto.startDate,
+          endDate: createHotelDto.endDate,
+          city: createHotelDto.city,
+          hotelName: createHotelDto.hotelName,
+          bookingReference: createHotelDto.bookingReference,
+          totalPrice: createHotelDto.totalPrice,
+          amountPaid: createHotelDto.amountPaid,
+          roomType: createHotelDto.roomType,
+          provider: createHotelDto.provider,
+          reservationId: createHotelDto.reservationId,
+        },
       });
     });
   }
@@ -48,7 +68,12 @@ export class HotelsService {
     return handleRequest(async () => {
       const current = await this.prisma.hotel.findUniqueOrThrow({
         where: { id },
-        select: { startDate: true, endDate: true },
+        select: {
+          startDate: true,
+          endDate: true,
+          totalPrice: true,
+          amountPaid: true,
+        },
       });
 
       CommonDatePolicies.assertUpdateRange(
@@ -64,9 +89,35 @@ export class HotelsService {
           },
         },
       );
+
+      CommonPricePolicies.assertUpdatePrice(
+        updateHotelDto,
+        { total: current.totalPrice, paid: current.amountPaid },
+        'totalPrice',
+        'amountPaid',
+        { labels: { total: 'total', paid: 'pagado' } },
+      );
+
       return this.prisma.hotel.update({
         where: { id },
-        data: updateHotelDto,
+        data: {
+          startDate: updateHotelDto.startDate ?? undefined,
+          endDate: updateHotelDto.endDate ?? undefined,
+          city: updateHotelDto.city ?? undefined,
+          hotelName: updateHotelDto.hotelName ?? undefined,
+          bookingReference: updateHotelDto.bookingReference ?? undefined,
+          totalPrice:
+            typeof updateHotelDto.totalPrice === 'number'
+              ? updateHotelDto.totalPrice
+              : undefined,
+          amountPaid:
+            typeof updateHotelDto.amountPaid === 'number'
+              ? updateHotelDto.amountPaid
+              : undefined,
+          roomType: updateHotelDto.roomType ?? undefined,
+          provider: updateHotelDto.provider ?? undefined,
+          reservationId: updateHotelDto.reservationId ?? undefined,
+        },
       });
     });
   }

@@ -85,13 +85,13 @@ model Hotel {
   id               String   @id @default(uuid()) @db.Uuid
   startDate        DateTime
   endDate          DateTime
-  city             String
-  hotelName        String
-  bookingReference String
+  city             String   @db.VarChar(128)       
+  hotelName        String   @db.VarChar(255)
+  bookingReference String   @db.VarChar(255)
   totalPrice       Decimal  @db.Decimal(18, 2)
   amountPaid       Decimal  @db.Decimal(18, 2)
-  roomType         String
-  provider         String
+  roomType         String   @db.VarChar(255)
+  provider         String   @db.VarChar(128)
   reservationId    String   @db.Uuid
   uploadDate       DateTime @default(now())
 
@@ -102,14 +102,14 @@ model Hotel {
 
 model Plane {
   id               String    @id @default(uuid()) @db.Uuid
-  departure        String
-  arrival          String?
+  departure        String    @db.VarChar(128)
+  arrival          String?   @db.VarChar(128)
   departureDate    DateTime
   arrivalDate      DateTime?
   totalPrice       Decimal   @db.Decimal(18, 2)
   amountPaid       Decimal   @db.Decimal(18, 2)
-  bookingReference String
-  provider         String?
+  bookingReference String    @db.VarChar(255)
+  provider         String?   @db.VarChar(128)
   notes            String?   @db.Text
   reservationId    String    @db.Uuid
   uploadDate       DateTime  @default(now())
@@ -123,10 +123,10 @@ model Cruise {
   id               String    @id @default(uuid()) @db.Uuid
   startDate        DateTime
   endDate          DateTime?
-  bookingReference String
-  provider         String
-  embarkationPort  String
-  arrivalPort      String?
+  bookingReference String?   @db.VarChar(255)
+  provider         String    @db.VarChar(128)
+  embarkationPort  String    @db.VarChar(128)
+  arrivalPort      String?   @db.VarChar(128)
   totalPrice       Decimal   @db.Decimal(18, 2)
   amountPaid       Decimal   @db.Decimal(18, 2)
   reservationId    String    @db.Uuid
@@ -139,12 +139,12 @@ model Cruise {
 
 model Transfer {
   id               String        @id @default(uuid()) @db.Uuid
-  origin           String
-  destination      String?
+  origin           String        @db.VarChar(128)
+  destination      String?       @db.VarChar(128)
   departureDate    DateTime
-  bookingReference String?     
-  arrivalDate      String
-  provider         String
+  bookingReference String?       @db.VarChar(128)
+  arrivalDate      DateTime      
+  provider         String        @db.VarChar(128)
   reservationId    String        @db.Uuid
   totalPrice       Decimal       @db.Decimal(18, 2)
   amountPaid       Decimal       @db.Decimal(18, 2)
@@ -160,11 +160,11 @@ model Excursion {
   id               String   @id @default(uuid()) @db.Uuid
   totalPrice       Decimal  @db.Decimal(18, 2)
   amountPaid       Decimal  @db.Decimal(18, 2)
-  origin           String
-  provider         String
-  bookingReference String?   
+  origin           String   @db.VarChar(128)
+  provider         String   @db.VarChar(128)
+  bookingReference String?  @db.VarChar(128)
   excursionDate    DateTime
-  excursionName    String
+  excursionName    String   @db.VarChar(255)
   reservationId    String   @db.Uuid
   uploadDate       DateTime @default(now())
 
@@ -177,9 +177,9 @@ model MedicalAssist {
   id               String   @id @default(uuid()) @db.Uuid
   totalPrice       Decimal  @db.Decimal(18, 2)
   amountPaid       Decimal  @db.Decimal(18, 2)
-  bookingReference String
-  assistType       String?
-  provider         String
+  bookingReference String   @db.VarChar(255)
+  assistType       String?  @db.VarChar(128)
+  provider         String   @db.VarChar(128)
   reservationId    String   @db.Uuid
   uploadDate       DateTime @default(now())
 
