@@ -6,8 +6,7 @@ type RequireMode = 'both' | 'any' | 'none';
 type DateRangeOptions = {
   required?: RequireMode;
   allowEqual?: boolean;
-  minHoursBeforeStart?: number;
-  now?: Date;
+  minDurationMinutes?: number; // duración mínima entre start y end
   labels?: { start?: string; end?: string };
 };
 
@@ -37,8 +36,7 @@ export class CommonDatePolicies {
     const {
       required,
       allowEqual = false,
-      minHoursBeforeStart = 0,
-      now = new Date(),
+      minDurationMinutes,
       startLbl,
       endLbl,
     } = opts;
@@ -72,25 +70,24 @@ export class CommonDatePolicies {
     }
 
     if (start && end) {
-      const ok = allowEqual
+      const okOrder = allowEqual
         ? start.getTime() <= end.getTime()
         : start.getTime() < end.getTime();
-      if (!ok) {
+      if (!okOrder) {
         const cmp = allowEqual ? 'anterior o igual a' : 'anterior a';
         throw new BadRequestException(`${startLbl} debe ser ${cmp} ${endLbl}.`);
       }
-    }
 
-    if (start) {
-      const minMs = minHoursBeforeStart * 60 * 60 * 1000;
-      if (start.getTime() - now.getTime() < minMs) {
-        if (minHoursBeforeStart > 0) {
+      if (minDurationMinutes !== undefined) {
+        const diffMs = end.getTime() - start.getTime();
+        const minMs = minDurationMinutes * 60 * 1000;
+        if (diffMs < minMs) {
+          const human =
+            minDurationMinutes % 60 === 0
+              ? `${minDurationMinutes / 60} horas`
+              : `${minDurationMinutes} minutos`;
           throw new BadRequestException(
-            `${startLbl} debe tener al menos ${minHoursBeforeStart} horas de anticipación.`,
-          );
-        } else {
-          throw new BadRequestException(
-            `${startLbl} no puede estar en el pasado.`,
+            `La diferencia entre ${startLbl} y ${endLbl} debe ser de al menos ${human}.`,
           );
         }
       }

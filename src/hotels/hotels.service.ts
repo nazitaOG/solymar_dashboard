@@ -57,6 +57,7 @@ export class HotelsService {
         'startDate',
         'endDate',
         {
+          allowEqual: true,
           labels: {
             start: 'fecha de inicio',
             end: 'fecha de fin',
