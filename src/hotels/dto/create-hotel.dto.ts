@@ -8,9 +8,9 @@ import {
   IsNotEmpty,
   MaxLength,
 } from 'class-validator';
-import { ToDateDay } from '../../common/decorators/date.transformers';
-import { Transform, Type } from 'class-transformer';
-import { toTrim } from '../../common/transformers';
+import { ToDateDay } from '../../common/decorators/date.decorators';
+import { Type } from 'class-transformer';
+import { ToTrim } from '../../common/decorators/string.decorators';
 
 export class CreateHotelDto {
   @Type(() => Date)
@@ -23,19 +23,19 @@ export class CreateHotelDto {
   @IsDate()
   endDate: Date;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsNotEmpty()
   @MaxLength(128)
   city: string;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
   hotelName: string;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
@@ -53,13 +53,13 @@ export class CreateHotelDto {
   @Max(Number.MAX_SAFE_INTEGER)
   amountPaid: number;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
   roomType: string;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsNotEmpty()
   @MaxLength(128)

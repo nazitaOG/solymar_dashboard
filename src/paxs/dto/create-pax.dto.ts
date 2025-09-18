@@ -6,13 +6,13 @@ import {
   IsNotEmpty,
   MaxLength,
 } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { ToDateDay } from '../../common/decorators/date.transformers';
-import { toTrim, toUpperTrim } from '../../common/transformers';
+import { Type } from 'class-transformer';
+import { ToDateDay } from '../../common/decorators/date.decorators';
+import { ToTrim, ToUpperTrim } from '../../common/decorators/string.decorators';
 
 export class CreatePaxDto {
   // TRANSFORMACIONES PRIMERO
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsNotEmpty()
   @MaxLength(128)
@@ -23,14 +23,14 @@ export class CreatePaxDto {
   @IsDate()
   birthDate!: Date;
 
-  @Transform(toUpperTrim, { toClassOnly: true })
+  @ToUpperTrim()
   @IsString()
   @MaxLength(128)
   nationality!: string;
 
   // PASAPORTE (requerido si NO viene DNI)
   @ValidateIf((o: CreatePaxDto) => !o.dniNum)
-  @Transform(toUpperTrim, { toClassOnly: true })
+  @ToUpperTrim()
   @IsString()
   @IsNotEmpty()
   @Matches(/^[A-Za-z0-9]{6,9}$/, {
@@ -47,7 +47,7 @@ export class CreatePaxDto {
 
   // DNI (requerido si NO viene PASAPORTE)
   @ValidateIf((o: CreatePaxDto) => !o.passportNum)
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsNotEmpty()
   @Matches(/^\d{8}$/, { message: 'DNI: debe tener exactamente 8 dígitos' })

@@ -11,18 +11,18 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { TransportType } from '@prisma/client';
-import { toTrim } from '../../common/transformers';
-import { Transform, Type } from 'class-transformer';
-import { ToDateDay } from '../../common/decorators/date.transformers';
+import { Type } from 'class-transformer';
+import { ToDateDay } from '../../common/decorators/date.decorators';
+import { ToTrim } from '../../common/decorators/string.decorators';
 
 export class CreateTransferDto {
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @MaxLength(128)
   @IsNotEmpty()
   origin: string;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsOptional()
   @MaxLength(128)
   @IsString()
@@ -38,20 +38,20 @@ export class CreateTransferDto {
   @IsDate()
   arrivalDate: Date;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @MaxLength(128)
   @IsNotEmpty()
   provider: string;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @MaxLength(128)
   @IsNotEmpty()
   @IsOptional()
   bookingReference?: string;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsUUID()
   @IsNotEmpty()
   reservationId: string;

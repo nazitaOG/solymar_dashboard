@@ -8,8 +8,8 @@ import {
   IsNotEmpty,
   MaxLength,
 } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { toTrim } from '../../common/transformers';
+import { Type } from 'class-transformer';
+import { ToTrim } from '../../common/decorators/string.decorators';
 
 export class CreateMedicalAssistDto {
   @Type(() => Number)
@@ -24,19 +24,19 @@ export class CreateMedicalAssistDto {
   @Max(Number.MAX_SAFE_INTEGER)
   amountPaid: number;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
   bookingReference: string;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsOptional()
   @MaxLength(128)
   assistType?: string;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsNotEmpty()
   @MaxLength(128)

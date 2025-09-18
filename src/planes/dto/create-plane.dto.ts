@@ -9,18 +9,18 @@ import {
   IsNotEmpty,
   MaxLength,
 } from 'class-validator';
-import { ToDateMinute } from '../../common/decorators/date.transformers';
-import { Transform, Type } from 'class-transformer';
-import { toUpperTrim, toTrim } from '../../common/transformers';
+import { ToDateMinute } from '../../common/decorators/date.decorators';
+import { Type } from 'class-transformer';
+import { ToTrim, ToUpperTrim } from '../../common/decorators/string.decorators';
 
 export class CreatePlaneDto {
-  @Transform(toUpperTrim, { toClassOnly: true })
+  @ToUpperTrim()
   @IsString()
   @IsNotEmpty()
   @MaxLength(128)
   departure: string;
 
-  @Transform(toUpperTrim, { toClassOnly: true })
+  @ToUpperTrim()
   @IsString()
   @IsOptional()
   @MaxLength(128)
@@ -37,13 +37,13 @@ export class CreatePlaneDto {
   @IsOptional()
   arrivalDate?: Date;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
   bookingReference: string;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsOptional()
   @MaxLength(128)
@@ -61,7 +61,7 @@ export class CreatePlaneDto {
   @Max(Number.MAX_SAFE_INTEGER)
   amountPaid: number;
 
-  @Transform(toTrim, { toClassOnly: true })
+  @ToTrim()
   @IsString()
   @IsOptional()
   @MaxLength(1024)
