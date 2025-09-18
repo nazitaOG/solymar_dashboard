@@ -11,6 +11,7 @@ import { CruisesModule } from './cruises/cruises.module';
 import { TransfersModule } from './transfers/transfers.module';
 import { ExcursionsModule } from './excursions/excursions.module';
 import { MedicalAssistsModule } from './medical_assists/medical_assists.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { MedicalAssistsModule } from './medical_assists/medical_assists.module';
     TransfersModule,
     ExcursionsModule,
     MedicalAssistsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
