@@ -11,15 +11,9 @@ const PASSWORD_REGEX =
 // - 8+ caracteres
 
 export class CreateUserDto {
-  @ToLowerTrim()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(128)
-  username: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(128)
+  @MaxLength(64)
   @Matches(PASSWORD_REGEX, {
     message:
       'La contraseña debe contener al menos 1 minúscula, 1 mayúscula, 1 número y 1 símbolo, y tener al menos 8 caracteres',
