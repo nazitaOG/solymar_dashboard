@@ -42,6 +42,7 @@ export class AuthService {
         select: {
           email: true,
           hashedPassword: true,
+          isActive: true,
         },
       });
       if (!user) throw new UnauthorizedException('Invalid credentials');
@@ -50,6 +51,7 @@ export class AuthService {
         loginUserDto.password,
         pepper,
       );
+      if (!user.isActive) throw new UnauthorizedException('User is blocked');
       if (!isPasswordValid)
         throw new UnauthorizedException('Invalid credentials');
       return user;
