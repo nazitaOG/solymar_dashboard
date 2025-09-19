@@ -3,6 +3,9 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoginThrottleGuard } from './guards/login-throttle.guard';
+import { PassportModule } from '@nestjs/passport';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -13,6 +16,16 @@ import { LoginThrottleGuard } from './guards/login-throttle.guard';
         limit: 5, // esto es el numero de requests permitidos en el ttl
       },
     ]),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN') ?? '1h',
+        },
+      }),
+    }),
   ],
   controllers: [AuthController],
   providers: [AuthService, LoginThrottleGuard],

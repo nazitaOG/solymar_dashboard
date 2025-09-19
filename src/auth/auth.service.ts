@@ -1,22 +1,27 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { hashPassword, verifyPassword } from '../common/security/hash_password';
 import { LoginUserDto } from './dto/login-user.dto';
 
-const pepper = process.env.PEPPER;
-
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly pepper: string;
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {
+    this.pepper = this.configService.getOrThrow<string>('PEPPER');
+  }
 
   register(createAuthDto: CreateUserDto) {
     return handleRequest(async () => {
       const hashed = await hashPassword(
         createAuthDto.password,
         undefined,
-        pepper,
+        this.pepper,
       );
       const user = await this.prisma.user.create({
         data: {
@@ -49,7 +54,7 @@ export class AuthService {
       const isPasswordValid = await verifyPassword(
         user.hashedPassword,
         loginUserDto.password,
-        pepper,
+        this.pepper,
       );
       if (!user.isActive) throw new UnauthorizedException('User is blocked');
       if (!isPasswordValid)
