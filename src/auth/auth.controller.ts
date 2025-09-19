@@ -10,7 +10,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { ttl: 60, limit: 5 } }) // register: 5/min
+  @Throttle({ default: { ttl: 600000, limit: 10 } }) // register: 5/min
   @Post('register')
   create(@Body() createAuthDto: CreateUserDto) {
     return this.authService.register(createAuthDto);
@@ -18,8 +18,10 @@ export class AuthController {
 
   @UseGuards(LoginThrottleGuard)
   @Throttle({
-    burst: { ttl: 15, limit: 3 }, // anti-ráfaga: 3 cada 15s
-    sustained: { ttl: 300, limit: 10 }, // sostenido: 10 cada 5 min
+    burst: { ttl: 15000, limit: 3 }, // anti-ráfaga: 3 cada 15s
+    sustained: { ttl: 600000, limit: 10 }, // sostenido: 10 cada 5 minutos
+    // ojo si entramos en 429 y seguimos mandando empieza a contar para el limite de 10
+    // cada request aumentan el contador en paralelo para los dos casos
   })
   @Post('login')
   login(@Body() loginUserDto: LoginUserDto) {

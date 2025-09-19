@@ -29,6 +29,7 @@ export class LoginThrottleGuard extends ThrottlerGuard {
         ? rawEmail.trim().toLowerCase()
         : 'unknown-email';
 
+    // console.log('[Throttle key]', `${ip}:${email}`); // para debug
     return Promise.resolve(`${ip}:${email}`);
   }
 
