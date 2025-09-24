@@ -6,6 +6,7 @@ import { LoginThrottleGuard } from './guards/login-throttle.guard';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ConfigService } from '@nestjs/config';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LoginThrottleGuard],
+  providers: [AuthService, LoginThrottleGuard, JwtStrategy],
+  exports: [AuthService, JwtStrategy],
 })
 export class AuthModule {}
