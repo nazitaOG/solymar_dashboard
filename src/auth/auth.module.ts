@@ -2,11 +2,12 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { LoginThrottleGuard } from './guards/login-throttle.guard';
+import { LoginThrottleGuard } from './guards/login-throttle/login-throttle.guard';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { GetJwtUtils } from './utils/get-jwt.utils';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LoginThrottleGuard, JwtStrategy],
+  providers: [AuthService, LoginThrottleGuard, JwtStrategy, GetJwtUtils],
   exports: [AuthService, JwtStrategy, PassportModule, JwtModule],
 })
 export class AuthModule {}

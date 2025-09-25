@@ -13,9 +13,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   ) {
     const jwtSecret = configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
-      throw new Error(
-        'JWT_SECRET no está definido en las variables de entorno',
-      );
+      throw new Error('JWT_SECRET is not defined in the environment variables');
     }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -25,10 +23,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    const { email } = payload;
+    const { sub } = payload;
+    if (!sub) {
+      throw new UnauthorizedException('Invalid token');
+    }
     // Prisma no permite usar select e include juntos, así que hay que usar solo include
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { id: sub },
       include: {
         roleUsers: {
           select: {
@@ -43,18 +44,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Token inválido');
+      throw new UnauthorizedException('Invalid token');
     }
     if (!user.isActive) {
-      throw new UnauthorizedException('Usuario inactivo, contacta al admin');
+      throw new UnauthorizedException('User is blocked, contact the admin');
     }
-    // Retornamos solo los campos necesarios, para mantener compatibilidad
+
+    const roles = user.roleUsers.map((ru) => ru.role.description);
+
     return {
       id: user.id,
       email: user.email,
       username: user.username,
       isActive: user.isActive,
-      roleUsers: user.roleUsers,
-    };
+      roles,
+    } as const;
   }
 }

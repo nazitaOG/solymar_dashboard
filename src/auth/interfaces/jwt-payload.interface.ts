@@ -1,4 +1,4 @@
 export interface JwtPayload {
-  email: string;
-  username: string;
+  sub: string; // id de usuario
+  tv?: number; // tokenVersion (opcional)
 }

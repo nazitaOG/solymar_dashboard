@@ -5,6 +5,7 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { hashPassword, verifyPassword } from '../common/security/hash_password';
 import { LoginUserDto } from './dto/login-user.dto';
+import { GetJwtUtils } from './utils/get-jwt.utils';
 
 @Injectable()
 export class AuthService {
@@ -12,6 +13,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly getJwtUtils: GetJwtUtils,
   ) {
     this.pepper = this.configService.getOrThrow<string>('PEPPER');
   }
@@ -45,9 +47,11 @@ export class AuthService {
       const user = await this.prisma.user.findUnique({
         where: { email: loginUserDto.email },
         select: {
+          id: true,
           email: true,
           hashedPassword: true,
           isActive: true,
+          username: true,
         },
       });
       if (!user) throw new UnauthorizedException('Invalid credentials');
@@ -59,7 +63,18 @@ export class AuthService {
       if (!user.isActive) throw new UnauthorizedException('User is blocked');
       if (!isPasswordValid)
         throw new UnauthorizedException('Invalid credentials');
-      return user;
+      return {
+        ...user,
+        token: this.getJwtUtils.generateAccessToken({
+          sub: user.id,
+        }),
+      };
     });
+  }
+
+  try() {
+    return {
+      message: 'Hello World',
+    };
   }
 }
