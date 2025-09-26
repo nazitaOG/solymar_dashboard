@@ -11,23 +11,34 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  // Limpieza en orden seguro (FKs primero)
-  await prisma.$transaction([
-    prisma.roleUser.deleteMany({}),
-    prisma.hotel.deleteMany({}),
-    prisma.plane.deleteMany({}),
-    prisma.cruise.deleteMany({}),
-    prisma.transfer.deleteMany({}),
-    prisma.excursion.deleteMany({}),
-    prisma.medicalAssist.deleteMany({}),
-    prisma.paxReservation.deleteMany({}),
-    prisma.passport.deleteMany({}),
-    prisma.dni.deleteMany({}),
-    prisma.reservation.deleteMany({}),
-    prisma.pax.deleteMany({}),
-    prisma.role.deleteMany({}),
-    prisma.user.deleteMany({}),
-  ]);
+  // deshabilitar constraints
+  await prisma.$executeRaw`SET session_replication_role = replica;`;
+  try {
+    // purgar datos en orden seguro
+    await prisma.$transaction([
+      prisma.roleUser.deleteMany({}),
+      prisma.hotel.deleteMany({}),
+      prisma.plane.deleteMany({}),
+      prisma.cruise.deleteMany({}),
+      prisma.transfer.deleteMany({}),
+      prisma.excursion.deleteMany({}),
+      prisma.medicalAssist.deleteMany({}),
+      prisma.paxReservation.deleteMany({}),
+      prisma.passport.deleteMany({}),
+      prisma.dni.deleteMany({}),
+      prisma.reservation.deleteMany({}),
+      prisma.pax.deleteMany({}),
+      prisma.role.deleteMany({}),
+      prisma.user.deleteMany({}),
+    ]);
+
+    // habilitar constraints
+    await prisma.$executeRaw`SET session_replication_role = DEFAULT;`;
+  } catch (error) {
+    // habilitar constraints en caso de error
+    await prisma.$executeRaw`SET session_replication_role = DEFAULT;`;
+    throw error;
+  }
 
   // Roles
   const [adminRole, userRole, superAdminRole] = await Promise.all([
