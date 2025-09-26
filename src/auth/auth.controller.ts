@@ -5,6 +5,8 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { LoginThrottleGuard } from './guards/login-throttle/login-throttle.guard';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
+import { Auth } from './decorators/auth.decorator';
+import { ValidRoles } from './interfaces/valid-roles.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -12,6 +14,7 @@ export class AuthController {
 
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { ttl: 600000, limit: 10 } }) // register: 5/min
+  @Auth(ValidRoles.super_admin)
   @Post('register')
   create(@Body() createAuthDto: CreateUserDto) {
     return this.authService.register(createAuthDto);

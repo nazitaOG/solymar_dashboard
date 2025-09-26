@@ -6,7 +6,9 @@ import {
   ReservationState,
   TransportType,
 } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
+import { hashPassword } from '../src/common/security/hash_password';
+
+const pepper = process.env.PEPPER;
 
 const prisma = new PrismaClient();
 
@@ -53,21 +55,21 @@ async function main() {
       data: {
         email: 'user@example.com',
         username: 'user123',
-        hashedPassword: await bcrypt.hash('password123', 10),
+        hashedPassword: await hashPassword('password123', undefined, pepper),
       },
     }),
     prisma.user.create({
       data: {
         email: 'admin@example.com',
         username: 'admin123',
-        hashedPassword: await bcrypt.hash('password123', 10),
+        hashedPassword: await hashPassword('password123', undefined, pepper),
       },
     }),
     prisma.user.create({
       data: {
         email: 'superadmin@example.com',
         username: 'superadmin123',
-        hashedPassword: await bcrypt.hash('password123', 10),
+        hashedPassword: await hashPassword('password123', undefined, pepper),
       },
     }),
   ]);
