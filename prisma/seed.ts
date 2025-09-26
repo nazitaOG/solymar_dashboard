@@ -30,13 +30,14 @@ async function main() {
   ]);
 
   // Roles
-  const [adminRole, userRole] = await Promise.all([
-    prisma.role.create({ data: { description: 'Admin' } }),
-    prisma.role.create({ data: { description: 'User' } }),
+  const [adminRole, userRole, superAdminRole] = await Promise.all([
+    prisma.role.create({ data: { description: 'admin' } }),
+    prisma.role.create({ data: { description: 'user' } }),
+    prisma.role.create({ data: { description: 'super_admin' } }),
   ]);
 
   // Users
-  const [user, admin] = await Promise.all([
+  const [user, admin, superAdmin] = await Promise.all([
     prisma.user.create({
       data: {
         email: 'user@example.com',
@@ -51,12 +52,26 @@ async function main() {
         hashedPassword: await bcrypt.hash('password123', 10),
       },
     }),
+    prisma.user.create({
+      data: {
+        email: 'superadmin@example.com',
+        username: 'superadmin123',
+        hashedPassword: await bcrypt.hash('password123', 10),
+      },
+    }),
   ]);
 
   await prisma.roleUser.createMany({
     data: [
+      // admin tiene admin y user
       { roleId: adminRole.id, userId: admin.id },
+      { roleId: userRole.id, userId: admin.id },
+      // user tiene user
       { roleId: userRole.id, userId: user.id },
+      // superAdmin tiene admin, user y super_admin
+      { roleId: superAdminRole.id, userId: superAdmin.id },
+      { roleId: adminRole.id, userId: superAdmin.id },
+      { roleId: userRole.id, userId: superAdmin.id },
     ],
     skipDuplicates: true,
   });

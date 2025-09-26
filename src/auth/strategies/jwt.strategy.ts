@@ -6,7 +6,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
@@ -32,7 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { id: sub },
       include: {
         roleUsers: {
-          select: {
+          include: {
             role: {
               select: {
                 description: true,
