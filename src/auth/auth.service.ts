@@ -54,27 +54,35 @@ export class AuthService {
           username: true,
         },
       });
-      if (!user) throw new UnauthorizedException('Invalid credentials');
+
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      if (!user.isActive) {
+        throw new UnauthorizedException('User is blocked');
+      }
+
       const isPasswordValid = await verifyPassword(
         user.hashedPassword,
         loginUserDto.password,
         this.pepper,
       );
-      if (!user.isActive) throw new UnauthorizedException('User is blocked');
-      if (!isPasswordValid)
+
+      if (!isPasswordValid) {
         throw new UnauthorizedException('Invalid credentials');
+      }
+
+      const token = await this.getJwtUtils.generateAccessToken({
+        sub: user.id.toString(),
+      });
+
       return {
-        ...user,
-        token: this.getJwtUtils.generateAccessToken({
-          sub: user.id,
-        }),
+        username: user.username,
+        email: user.email,
+        isActive: user.isActive,
+        token,
       };
     });
-  }
-
-  try() {
-    return {
-      message: 'Hello World',
-    };
   }
 }

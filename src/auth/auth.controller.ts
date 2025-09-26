@@ -1,10 +1,9 @@
-import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { LoginThrottleGuard } from './guards/login-throttle/login-throttle.guard';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
-import { AuthGuard } from '@nestjs/passport';
 import { Auth } from './decorators/auth.decorator';
 import { ValidRoles } from './interfaces/valid-roles.interface';
 
@@ -30,11 +29,5 @@ export class AuthController {
   @Post('login')
   login(@Body() loginUserDto: LoginUserDto) {
     return this.authService.login(loginUserDto);
-  }
-
-  @UseGuards(AuthGuard())
-  @Get('try')
-  try() {
-    return this.authService.try();
   }
 }
