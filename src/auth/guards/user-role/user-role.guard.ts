@@ -35,7 +35,8 @@ export class UserRoleGuard implements CanActivate {
     for (const role of validRoles) {
       if (user.roles.includes(role)) return true;
     }
-    throw new ForbiddenException(`User does not have a valid role [
-      ${validRoles.join(', ')}]`);
+    throw new ForbiddenException(
+      `User does not have a valid role [${validRoles.join(', ')}]`,
+    );
   }
 }
