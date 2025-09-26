@@ -11,7 +11,9 @@ import {
 import { CruisesService } from './cruises.service';
 import { CreateCruiseDto } from './dto/create-cruise.dto';
 import { UpdateCruiseDto } from './dto/update-cruise.dto';
+import { Auth } from '@/auth/decorators/auth.decorator';
 
+@Auth()
 @Controller('cruises')
 export class CruisesController {
   constructor(private readonly cruisesService: CruisesService) {}

@@ -11,7 +11,9 @@ import {
 import { ExcursionsService } from './excursions.service';
 import { CreateExcursionDto } from './dto/create-excursion.dto';
 import { UpdateExcursionDto } from './dto/update-excursion.dto';
+import { Auth } from '@/auth/decorators/auth.decorator';
 
+@Auth()
 @Controller('excursions')
 export class ExcursionsController {
   constructor(private readonly excursionsService: ExcursionsService) {}

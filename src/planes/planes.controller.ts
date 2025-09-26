@@ -11,7 +11,9 @@ import {
 import { PlanesService } from './planes.service';
 import { CreatePlaneDto } from './dto/create-plane.dto';
 import { UpdatePlaneDto } from './dto/update-plane.dto';
+import { Auth } from '@/auth/decorators/auth.decorator';
 
+@Auth()
 @Controller('planes')
 export class PlanesController {
   constructor(private readonly planesService: PlanesService) {}

@@ -11,7 +11,9 @@ import {
 import { MedicalAssistsService } from './medical_assists.service';
 import { CreateMedicalAssistDto } from './dto/create-medical_assist.dto';
 import { UpdateMedicalAssistDto } from './dto/update-medical_assist.dto';
+import { Auth } from '@/auth/decorators/auth.decorator';
 
+@Auth()
 @Controller('medical-assists')
 export class MedicalAssistsController {
   constructor(private readonly medicalAssistsService: MedicalAssistsService) {}

@@ -11,7 +11,9 @@ import {
 import { PaxService } from './paxs.service';
 import { CreatePaxDto } from './dto/create-pax.dto';
 import { UpdatePaxDto } from './dto/update-pax.dto';
+import { Auth } from '@/auth/decorators/auth.decorator';
 
+@Auth()
 @Controller('pax')
 export class PaxController {
   constructor(private readonly paxService: PaxService) {}
