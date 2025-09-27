@@ -12,6 +12,8 @@ import { CruisesService } from './cruises.service';
 import { CreateCruiseDto } from './dto/create-cruise.dto';
 import { UpdateCruiseDto } from './dto/update-cruise.dto';
 import { Auth } from '@/auth/decorators/auth.decorator';
+import { GetUser } from '@/auth/decorators/get-user.decorator';
+import { User } from '@prisma/client';
 
 @Auth()
 @Controller('cruises')
@@ -19,14 +21,9 @@ export class CruisesController {
   constructor(private readonly cruisesService: CruisesService) {}
 
   @Post()
-  create(@Body() createCruiseDto: CreateCruiseDto) {
-    return this.cruisesService.create(createCruiseDto);
+  create(@GetUser() user: User, @Body() createCruiseDto: CreateCruiseDto) {
+    return this.cruisesService.create(user.id, createCruiseDto);
   }
-
-  // @Get()
-  // findAll() {
-  //   return this.cruisesService.findAll();
-  // }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
@@ -35,14 +32,15 @@ export class CruisesController {
 
   @Patch(':id')
   update(
+    @GetUser() user: User,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCruiseDto: UpdateCruiseDto,
   ) {
-    return this.cruisesService.update(id, updateCruiseDto);
+    return this.cruisesService.update(user.id, id, updateCruiseDto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.cruisesService.remove(id);
+  remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
+    return this.cruisesService.remove(user.id, id);
   }
 }

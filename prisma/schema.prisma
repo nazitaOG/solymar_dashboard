@@ -29,29 +29,44 @@ enum TransportType {
  */
 
 model User {
-  id             String   @id @default(uuid()) @db.Uuid
+  id             String  @id @default(uuid()) @db.Uuid
   hashedPassword String
-  email          String   @unique
-  username       String   @unique
-  uploadDate     DateTime @default(now())
-  isActive       Boolean  @default(true)
+  email          String  @unique
+  username       String  @unique
+  isActive       Boolean @default(true)
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   reservations Reservation[]
   roleUsers    RoleUser[]
 }
 
 model Role {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String @id @default(uuid()) @db.Uuid
   description String
-  uploadDate  DateTime @default(now())
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   roleUsers RoleUser[]
 }
 
 model RoleUser {
-  roleId     String   @db.Uuid
-  userId     String   @db.Uuid
-  uploadDate DateTime @default(now())
+  roleId String @db.Uuid
+  userId String @db.Uuid
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -68,9 +83,14 @@ model RoleUser {
 model Reservation {
   id         String           @id @default(uuid()) @db.Uuid
   userId     String           @db.Uuid
-  uploadDate DateTime         @default(now())
   totalPrice Decimal          @db.Decimal(18, 2)
   state      ReservationState @default(PENDING)
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   user            User             @relation(fields: [userId], references: [id], onDelete: Restrict)
   hotels          Hotel[]
@@ -86,7 +106,7 @@ model Hotel {
   id               String   @id @default(uuid()) @db.Uuid
   startDate        DateTime
   endDate          DateTime
-  city             String   @db.VarChar(128)       
+  city             String   @db.VarChar(128)
   hotelName        String   @db.VarChar(255)
   bookingReference String   @db.VarChar(255)
   totalPrice       Decimal  @db.Decimal(18, 2)
@@ -94,7 +114,12 @@ model Hotel {
   roomType         String   @db.VarChar(255)
   provider         String   @db.VarChar(128)
   reservationId    String   @db.Uuid
-  uploadDate       DateTime @default(now())
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -113,7 +138,12 @@ model Plane {
   provider         String?   @db.VarChar(128)
   notes            String?   @db.Text
   reservationId    String    @db.Uuid
-  uploadDate       DateTime  @default(now())
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -131,7 +161,12 @@ model Cruise {
   totalPrice       Decimal   @db.Decimal(18, 2)
   amountPaid       Decimal   @db.Decimal(18, 2)
   reservationId    String    @db.Uuid
-  uploadDate       DateTime  @default(now())
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -144,13 +179,18 @@ model Transfer {
   destination      String?       @db.VarChar(128)
   departureDate    DateTime
   bookingReference String?       @db.VarChar(128)
-  arrivalDate      DateTime      
+  arrivalDate      DateTime
   provider         String        @db.VarChar(128)
   reservationId    String        @db.Uuid
   totalPrice       Decimal       @db.Decimal(18, 2)
   amountPaid       Decimal       @db.Decimal(18, 2)
-  uploadDate       DateTime      @default(now())
   transportType    TransportType @default(PICKUP)
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -167,7 +207,12 @@ model Excursion {
   excursionDate    DateTime
   excursionName    String   @db.VarChar(255)
   reservationId    String   @db.Uuid
-  uploadDate       DateTime @default(now())
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -175,14 +220,19 @@ model Excursion {
 }
 
 model MedicalAssist {
-  id               String   @id @default(uuid()) @db.Uuid
-  totalPrice       Decimal  @db.Decimal(18, 2)
-  amountPaid       Decimal  @db.Decimal(18, 2)
-  bookingReference String   @db.VarChar(255)
-  assistType       String?  @db.VarChar(128)
-  provider         String   @db.VarChar(128)
-  reservationId    String   @db.Uuid
-  uploadDate       DateTime @default(now())
+  id               String  @id @default(uuid()) @db.Uuid
+  totalPrice       Decimal @db.Decimal(18, 2)
+  amountPaid       Decimal @db.Decimal(18, 2)
+  bookingReference String  @db.VarChar(255)
+  assistType       String? @db.VarChar(128)
+  provider         String  @db.VarChar(128)
+  reservationId    String  @db.Uuid
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -200,7 +250,12 @@ model Pax {
   name        String
   birthDate   DateTime
   nationality String
-  uploadDate  DateTime @default(now())
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   passport Passport?
   dni      Dni?
@@ -212,7 +267,12 @@ model Passport {
   id             String   @id @default(uuid()) @db.Uuid
   passportNum    String   @unique
   expirationDate DateTime
-  uploadDate     DateTime @default(now())
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   paxId String @unique @db.Uuid
   pax   Pax    @relation(fields: [paxId], references: [id], onDelete: Cascade)
@@ -222,7 +282,12 @@ model Dni {
   id             String   @id @default(uuid()) @db.Uuid
   dniNum         String   @unique
   expirationDate DateTime
-  uploadDate     DateTime @default(now())
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   paxId String @unique @db.Uuid
   pax   Pax    @relation(fields: [paxId], references: [id], onDelete: Cascade)
@@ -235,10 +300,15 @@ model Dni {
  */
 
 model PaxReservation {
-  id            String   @id @default(uuid()) @db.Uuid
-  paxId         String   @db.Uuid
-  reservationId String   @db.Uuid
-  uploadDate    DateTime @default(now())
+  id            String @id @default(uuid()) @db.Uuid
+  paxId         String @db.Uuid
+  reservationId String @db.Uuid
+
+  // audit
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
 
   pax         Pax         @relation(fields: [paxId], references: [id], onDelete: Cascade)
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)

@@ -11,8 +11,13 @@ import { CommonPricePolicies } from '../common/policies/price.policies';
 export class CruisesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createCruiseDto: CreateCruiseDto) {
+  /**
+   * Nuevo: recibimos actorId (usuario autenticado) para sellar createdBy/updatedBy.
+   * Más adelante esto lo hará un middleware y podemos sacar el parámetro.
+   */
+  create(actorId: string, createCruiseDto: CreateCruiseDto) {
     return handleRequest(async () => {
+      // Validaciones de dominio (igual que antes)
       CommonOriginDestinationPolicies.assertCreateDifferent(
         createCruiseDto,
         'embarkationPort',
@@ -27,19 +32,13 @@ export class CruisesService {
 
       CommonDatePolicies.assertUpdateRange(
         createCruiseDto,
-        {
-          start: createCruiseDto.startDate,
-          end: createCruiseDto.endDate,
-        },
+        { start: createCruiseDto.startDate, end: createCruiseDto.endDate },
         'startDate',
         'endDate',
         {
           minDurationMinutes: 60,
           allowEqual: true,
-          labels: {
-            start: 'fecha de salida',
-            end: 'fecha de llegada',
-          },
+          labels: { start: 'fecha de salida', end: 'fecha de llegada' },
         },
       );
 
@@ -61,26 +60,22 @@ export class CruisesService {
           totalPrice: createCruiseDto.totalPrice,
           amountPaid: createCruiseDto.amountPaid,
           reservationId: createCruiseDto.reservationId,
+
+          // 🔐 sellos requeridos por el nuevo schema
+          createdBy: actorId,
+          updatedBy: actorId,
         },
       });
     });
   }
 
-  // findAll() {
-  //   return handleRequest(() => {
-  //     return this.prisma.cruise.findMany();
-  //   });
-  // }
-
   findOne(id: string) {
     return handleRequest(async () => {
-      return this.prisma.cruise.findUniqueOrThrow({
-        where: { id },
-      });
+      return this.prisma.cruise.findUniqueOrThrow({ where: { id } });
     });
   }
 
-  update(id: string, updateCruiseDto: UpdateCruiseDto) {
+  update(actorId: string, id: string, updateCruiseDto: UpdateCruiseDto) {
     return handleRequest(async () => {
       const current = await this.prisma.cruise.findUniqueOrThrow({
         where: { id },
@@ -94,6 +89,7 @@ export class CruisesService {
         },
       });
 
+      // Validaciones de dominio (igual que antes)
       CommonOriginDestinationPolicies.assertUpdateDifferent(
         updateCruiseDto,
         { a: current.embarkationPort, b: current.arrivalPort },
@@ -115,10 +111,7 @@ export class CruisesService {
         {
           minDurationMinutes: 60,
           allowEqual: true,
-          labels: {
-            start: 'fecha de salida',
-            end: 'fecha de llegada',
-          },
+          labels: { start: 'fecha de salida', end: 'fecha de llegada' },
         },
       );
 
@@ -148,16 +141,18 @@ export class CruisesService {
               ? updateCruiseDto.amountPaid
               : undefined,
           reservationId: updateCruiseDto.reservationId ?? undefined,
+
+          // 🔐 sello requerido por el nuevo schema
+          updatedBy: actorId,
         },
       });
     });
   }
 
-  remove(id: string) {
+  remove(actorId: string, id: string) {
+    // Si querés “soft delete” con auditoría, acá pondrías deletedBy/At.
     return handleRequest(async () => {
-      return this.prisma.cruise.delete({
-        where: { id },
-      });
+      return this.prisma.cruise.delete({ where: { id } });
     });
   }
 }

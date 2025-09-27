@@ -6,17 +6,16 @@ import {
   ReservationState,
   TransportType,
 } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { hashPassword } from '../src/common/security/hash_password';
 
 const pepper = process.env.PEPPER;
-
 const prisma = new PrismaClient();
 
 async function main() {
-  // deshabilitar constraints
+  // 1) BORRADO LIMPIO
   await prisma.$executeRaw`SET session_replication_role = replica;`;
   try {
-    // purgar datos en orden seguro
     await prisma.$transaction([
       prisma.roleUser.deleteMany({}),
       prisma.hotel.deleteMany({}),
@@ -33,29 +32,60 @@ async function main() {
       prisma.role.deleteMany({}),
       prisma.user.deleteMany({}),
     ]);
-
-    // habilitar constraints
+  } finally {
     await prisma.$executeRaw`SET session_replication_role = DEFAULT;`;
-  } catch (error) {
-    // habilitar constraints en caso de error
-    await prisma.$executeRaw`SET session_replication_role = DEFAULT;`;
-    throw error;
   }
 
-  // Roles
+  // 2) USUARIO SYSTEM (para createdBy/updatedBy)
+  const SYSTEM_ID = randomUUID();
+  const systemUser = await prisma.user.create({
+    data: {
+      id: SYSTEM_ID,
+      email: 'system@local',
+      username: 'system',
+      hashedPassword: 'not-used-in-dev',
+      isActive: true,
+      createdBy: SYSTEM_ID,
+      updatedBy: SYSTEM_ID,
+    },
+  });
+  console.log('System user created:', systemUser);
+
+  // 3) ROLES
   const [adminRole, userRole, superAdminRole] = await Promise.all([
-    prisma.role.create({ data: { description: 'admin' } }),
-    prisma.role.create({ data: { description: 'user' } }),
-    prisma.role.create({ data: { description: 'super_admin' } }),
+    prisma.role.create({
+      data: {
+        description: 'admin',
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
+    }),
+    prisma.role.create({
+      data: {
+        description: 'user',
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
+    }),
+    prisma.role.create({
+      data: {
+        description: 'super_admin',
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
+    }),
   ]);
 
-  // Users
+  // 4) USERS
   const [user, admin, superAdmin] = await Promise.all([
     prisma.user.create({
       data: {
         email: 'user@example.com',
         username: 'user123',
         hashedPassword: await hashPassword('password123', undefined, pepper),
+        isActive: true,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
       },
     }),
     prisma.user.create({
@@ -63,6 +93,9 @@ async function main() {
         email: 'admin@example.com',
         username: 'admin123',
         hashedPassword: await hashPassword('password123', undefined, pepper),
+        isActive: true,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
       },
     }),
     prisma.user.create({
@@ -70,34 +103,71 @@ async function main() {
         email: 'superadmin@example.com',
         username: 'superadmin123',
         hashedPassword: await hashPassword('password123', undefined, pepper),
+        isActive: true,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
       },
     }),
   ]);
 
+  // 5) ROLE-USER (M2M)
   await prisma.roleUser.createMany({
     data: [
       // admin tiene admin y user
-      { roleId: adminRole.id, userId: admin.id },
-      { roleId: userRole.id, userId: admin.id },
+      {
+        roleId: adminRole.id,
+        userId: admin.id,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
+      {
+        roleId: userRole.id,
+        userId: admin.id,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
       // user tiene user
-      { roleId: userRole.id, userId: user.id },
+      {
+        roleId: userRole.id,
+        userId: user.id,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
       // superAdmin tiene admin, user y super_admin
-      { roleId: superAdminRole.id, userId: superAdmin.id },
-      { roleId: adminRole.id, userId: superAdmin.id },
-      { roleId: userRole.id, userId: superAdmin.id },
+      {
+        roleId: superAdminRole.id,
+        userId: superAdmin.id,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
+      {
+        roleId: adminRole.id,
+        userId: superAdmin.id,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
+      {
+        roleId: userRole.id,
+        userId: superAdmin.id,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
     ],
     skipDuplicates: true,
   });
 
-  // Reserva principal
+  // 6) RESERVA
   const reservation = await prisma.reservation.create({
     data: {
       userId: user.id,
-      totalPrice: new Prisma.Decimal('120000.00'),
+      totalPrice: new Prisma.Decimal('120000.00'), // denormalizado (luego lo automatizamos)
       state: ReservationState.CONFIRMED,
+      createdBy: SYSTEM_ID,
+      updatedBy: SYSTEM_ID,
     },
   });
 
+  // 7) ITEMS DE RESERVA
   // Hotel
   await prisma.hotel.create({
     data: {
@@ -111,10 +181,12 @@ async function main() {
       amountPaid: new Prisma.Decimal('40000.00'),
       roomType: 'Doble',
       provider: 'Booking.com',
+      createdBy: SYSTEM_ID,
+      updatedBy: SYSTEM_ID,
     },
   });
 
-  // Vuelo (arrival/arrivalDate/provider ahora pueden ser opcionales, pero los cargamos igual)
+  // Plane
   await prisma.plane.create({
     data: {
       reservationId: reservation.id,
@@ -127,10 +199,12 @@ async function main() {
       bookingReference: 'PLN-456',
       provider: 'Aerolíneas Argentinas',
       notes: 'Asiento 12A, equipaje incluido.',
+      createdBy: SYSTEM_ID,
+      updatedBy: SYSTEM_ID,
     },
   });
 
-  // Crucero (endDate/arrivalPort son opcionales)
+  // Cruise
   await prisma.cruise.create({
     data: {
       reservationId: reservation.id,
@@ -142,41 +216,46 @@ async function main() {
       provider: 'Royal Caribbean',
       totalPrice: new Prisma.Decimal('20000.00'),
       amountPaid: new Prisma.Decimal('10000.00'),
+      createdBy: SYSTEM_ID,
+      updatedBy: SYSTEM_ID,
     },
   });
 
-  // Transfers (nuevo modelo: origin/destination/departureDate/arrivalDate:string/transportType)
+  // Transfer (arrivalDate es DateTime en tu schema)
   await prisma.transfer.create({
     data: {
       reservationId: reservation.id,
       origin: 'Aeropuerto MIA',
       destination: 'Hotel Central',
       departureDate: new Date('2025-11-02T06:30:00Z'),
-      // arrivalDate es String en el schema → le pasamos texto (ISO o "07:10")
-      arrivalDate: '2025-11-02T07:10:00Z',
+      arrivalDate: new Date('2025-11-02T07:10:00Z'),
       provider: 'Shuttle Co.',
       totalPrice: new Prisma.Decimal('5000.00'),
       amountPaid: new Prisma.Decimal('5000.00'),
       transportType: TransportType.PICKUP,
+      createdBy: SYSTEM_ID,
+      updatedBy: SYSTEM_ID,
     },
   });
 
-  // Ejemplo extra de BUS
+  // Transfer extra (BUS)
   await prisma.transfer.create({
     data: {
       reservationId: reservation.id,
       origin: 'Miami Downtown',
       destination: 'Orlando Station',
       departureDate: new Date('2025-11-06T08:00:00Z'),
-      arrivalDate: '2025-11-06T12:15:00Z',
+      arrivalDate: new Date('2025-11-06T12:15:00Z'),
       provider: 'Greyhound',
       totalPrice: new Prisma.Decimal('3000.00'),
       amountPaid: new Prisma.Decimal('3000.00'),
       transportType: TransportType.BUS,
+      createdBy: SYSTEM_ID,
+      updatedBy: SYSTEM_ID,
     },
   });
 
-  // Excursión (ahora requiere origin)
+  // Excursion
   await prisma.excursion.create({
     data: {
       reservationId: reservation.id,
@@ -186,10 +265,12 @@ async function main() {
       excursionDate: new Date('2025-11-05T14:00:00Z'),
       totalPrice: new Prisma.Decimal('7000.00'),
       amountPaid: new Prisma.Decimal('0.00'),
+      createdBy: SYSTEM_ID,
+      updatedBy: SYSTEM_ID,
     },
   });
 
-  // Asistencia médica (assistType es opcional)
+  // Medical Assist
   await prisma.medicalAssist.create({
     data: {
       reservationId: reservation.id,
@@ -198,55 +279,76 @@ async function main() {
       provider: 'AssistCard',
       totalPrice: new Prisma.Decimal('8000.00'),
       amountPaid: new Prisma.Decimal('8000.00'),
+      createdBy: SYSTEM_ID,
+      updatedBy: SYSTEM_ID,
     },
   });
 
-  // Pax con documentos (cumple los triggers "pax con docs")
-  const [pax1, pax2] = await Promise.all([
-    prisma.pax.create({
-      data: {
-        name: 'Juan Pérez',
-        birthDate: new Date('1990-05-10T00:00:00Z'),
-        nationality: 'Argentina',
-        dni: {
-          create: {
-            dniNum: '12345678',
-            expirationDate: new Date('2030-01-01T00:00:00Z'),
-          },
-        },
-        passport: {
-          create: {
-            passportNum: 'AA1234567',
-            expirationDate: new Date('2031-03-01T00:00:00Z'),
-          },
+  // 8) PAX + DOCUMENTOS
+  const pax1 = await prisma.pax.create({
+    data: {
+      name: 'Juan Pérez',
+      birthDate: new Date('1990-05-10T00:00:00Z'),
+      nationality: 'Argentina',
+      createdBy: SYSTEM_ID,
+      updatedBy: SYSTEM_ID,
+      dni: {
+        create: {
+          dniNum: '12345678',
+          expirationDate: new Date('2030-01-01T00:00:00Z'),
+          createdBy: SYSTEM_ID,
+          updatedBy: SYSTEM_ID,
         },
       },
-    }),
-    prisma.pax.create({
-      data: {
-        name: 'Ana Gómez',
-        birthDate: new Date('1992-07-10T00:00:00Z'),
-        nationality: 'Argentina',
-        dni: {
-          create: {
-            dniNum: '35123456',
-            expirationDate: new Date('2029-10-20T00:00:00Z'),
-          },
+      passport: {
+        create: {
+          passportNum: 'AA1234567',
+          expirationDate: new Date('2031-03-01T00:00:00Z'),
+          createdBy: SYSTEM_ID,
+          updatedBy: SYSTEM_ID,
         },
       },
-    }),
-  ]);
+    },
+  });
 
-  // Vincular pax a la reserva
+  const pax2 = await prisma.pax.create({
+    data: {
+      name: 'Ana Gómez',
+      birthDate: new Date('1992-07-10T00:00:00Z'),
+      nationality: 'Argentina',
+      createdBy: SYSTEM_ID,
+      updatedBy: SYSTEM_ID,
+      dni: {
+        create: {
+          dniNum: '35123456',
+          expirationDate: new Date('2029-10-20T00:00:00Z'),
+          createdBy: SYSTEM_ID,
+          updatedBy: SYSTEM_ID,
+        },
+      },
+    },
+  });
+
+  // 9) JOIN PAX-RESERVATION
   await prisma.paxReservation.createMany({
     data: [
-      { paxId: pax1.id, reservationId: reservation.id },
-      { paxId: pax2.id, reservationId: reservation.id },
+      {
+        paxId: pax1.id,
+        reservationId: reservation.id,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
+      {
+        paxId: pax2.id,
+        reservationId: reservation.id,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
     ],
     skipDuplicates: true,
   });
 
-  console.log('✅ Seed completado (limpia + crea).');
+  console.log('✅ Seed completado (reset + carga de datos de ejemplo).');
 }
 
 main()
