@@ -1,51 +1,49 @@
 import { Injectable } from '@nestjs/common';
-import { CreateMedicalAssistDto } from './dto/create-medical_assist.dto';
-import { UpdateMedicalAssistDto } from './dto/update-medical_assist.dto';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
+import { CreateMedicalAssistDto } from './dto/create-medical_assist.dto';
+import { UpdateMedicalAssistDto } from './dto/update-medical_assist.dto';
 import { CommonPricePolicies } from '../common/policies/price.policies';
 
 @Injectable()
 export class MedicalAssistsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createMedicalAssistDto: CreateMedicalAssistDto) {
-    return handleRequest(() => {
+  // actorId = id del usuario autenticado
+  create(actorId: string, dto: CreateMedicalAssistDto) {
+    return handleRequest(async () => {
       CommonPricePolicies.assertCreatePrice(
-        createMedicalAssistDto,
+        dto,
         'totalPrice',
         'amountPaid',
+
         { labels: { total: 'total', paid: 'pagado' } },
       );
 
       return this.prisma.medicalAssist.create({
         data: {
-          totalPrice: createMedicalAssistDto.totalPrice,
-          amountPaid: createMedicalAssistDto.amountPaid,
-          bookingReference: createMedicalAssistDto.bookingReference,
-          assistType: createMedicalAssistDto.assistType ?? undefined,
-          provider: createMedicalAssistDto.provider,
-          reservationId: createMedicalAssistDto.reservationId,
+          reservationId: dto.reservationId,
+          bookingReference: dto.bookingReference,
+          assistType: dto.assistType ?? undefined,
+          provider: dto.provider,
+          totalPrice: dto.totalPrice,
+          amountPaid: dto.amountPaid,
+
+          createdBy: actorId,
+          updatedBy: actorId,
         },
       });
     });
   }
 
-  // findAll() {
-  //   return handleRequest(() => {
-  //     return this.prisma.medicalAssist.findMany();
-  //   });
-  // }
-
   findOne(id: string) {
-    return handleRequest(() => {
-      return this.prisma.medicalAssist.findUniqueOrThrow({
-        where: { id },
-      });
-    });
+    return handleRequest(() =>
+      this.prisma.medicalAssist.findUniqueOrThrow({ where: { id } }),
+    );
   }
 
-  update(id: string, updateMedicalAssistDto: UpdateMedicalAssistDto) {
+  // actorId = id del usuario autenticado
+  update(actorId: string, id: string, dto: UpdateMedicalAssistDto) {
     return handleRequest(async () => {
       const current = await this.prisma.medicalAssist.findUniqueOrThrow({
         where: { id },
@@ -53,7 +51,7 @@ export class MedicalAssistsService {
       });
 
       CommonPricePolicies.assertUpdatePrice(
-        updateMedicalAssistDto,
+        dto,
         { total: current.totalPrice, paid: current.amountPaid },
         'totalPrice',
         'amountPaid',
@@ -63,29 +61,25 @@ export class MedicalAssistsService {
       return this.prisma.medicalAssist.update({
         where: { id },
         data: {
+          reservationId: dto.reservationId ?? undefined,
+          bookingReference: dto.bookingReference ?? undefined,
+          assistType: dto.assistType ?? undefined,
+          provider: dto.provider ?? undefined,
           totalPrice:
-            typeof updateMedicalAssistDto.totalPrice === 'number'
-              ? updateMedicalAssistDto.totalPrice
-              : undefined,
+            typeof dto.totalPrice === 'number' ? dto.totalPrice : undefined,
           amountPaid:
-            typeof updateMedicalAssistDto.amountPaid === 'number'
-              ? updateMedicalAssistDto.amountPaid
-              : undefined,
-          bookingReference:
-            updateMedicalAssistDto.bookingReference ?? undefined,
-          assistType: updateMedicalAssistDto.assistType ?? undefined,
-          provider: updateMedicalAssistDto.provider ?? undefined,
-          reservationId: updateMedicalAssistDto.reservationId ?? undefined,
+            typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
+
+          updatedBy: actorId,
         },
       });
     });
   }
 
-  remove(id: string) {
-    return handleRequest(() => {
-      return this.prisma.medicalAssist.delete({
-        where: { id },
-      });
-    });
+  remove(actorId: string, id: string) {
+    // si luego haces soft delete, acá guardarías deletedBy/At
+    return handleRequest(() =>
+      this.prisma.medicalAssist.delete({ where: { id } }),
+    );
   }
 }

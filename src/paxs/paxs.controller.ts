@@ -12,6 +12,8 @@ import { PaxService } from './paxs.service';
 import { CreatePaxDto } from './dto/create-pax.dto';
 import { UpdatePaxDto } from './dto/update-pax.dto';
 import { Auth } from '@/auth/decorators/auth.decorator';
+import { GetUser } from '@/auth/decorators/get-user.decorator';
+import { User } from '@prisma/client';
 
 @Auth()
 @Controller('pax')
@@ -19,8 +21,8 @@ export class PaxController {
   constructor(private readonly paxService: PaxService) {}
 
   @Post()
-  create(@Body() createPaxDto: CreatePaxDto) {
-    return this.paxService.create(createPaxDto);
+  create(@GetUser() user: User, @Body() createPaxDto: CreatePaxDto) {
+    return this.paxService.create(user.id, createPaxDto);
   }
 
   @Get()
@@ -35,14 +37,15 @@ export class PaxController {
 
   @Patch(':id')
   update(
+    @GetUser() user: User,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updatePaxDto: UpdatePaxDto,
   ) {
-    return this.paxService.update(id, updatePaxDto);
+    return this.paxService.update(user.id, id, updatePaxDto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.paxService.remove(id);
+  remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
+    return this.paxService.remove(user.id, id);
   }
 }

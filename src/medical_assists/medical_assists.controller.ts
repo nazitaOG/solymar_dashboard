@@ -12,6 +12,8 @@ import { MedicalAssistsService } from './medical_assists.service';
 import { CreateMedicalAssistDto } from './dto/create-medical_assist.dto';
 import { UpdateMedicalAssistDto } from './dto/update-medical_assist.dto';
 import { Auth } from '@/auth/decorators/auth.decorator';
+import { GetUser } from '@/auth/decorators/get-user.decorator';
+import { User } from '@prisma/client';
 
 @Auth()
 @Controller('medical-assists')
@@ -19,14 +21,9 @@ export class MedicalAssistsController {
   constructor(private readonly medicalAssistsService: MedicalAssistsService) {}
 
   @Post()
-  create(@Body() createMedicalAssistDto: CreateMedicalAssistDto) {
-    return this.medicalAssistsService.create(createMedicalAssistDto);
+  create(@GetUser() user: User, @Body() dto: CreateMedicalAssistDto) {
+    return this.medicalAssistsService.create(user.id, dto);
   }
-
-  // @Get()
-  // findAll() {
-  //   return this.medicalAssistsService.findAll();
-  // }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
@@ -35,14 +32,15 @@ export class MedicalAssistsController {
 
   @Patch(':id')
   update(
+    @GetUser() user: User,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateMedicalAssistDto: UpdateMedicalAssistDto,
+    @Body() dto: UpdateMedicalAssistDto,
   ) {
-    return this.medicalAssistsService.update(id, updateMedicalAssistDto);
+    return this.medicalAssistsService.update(user.id, id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.medicalAssistsService.remove(id);
+  remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
+    return this.medicalAssistsService.remove(user.id, id);
   }
 }

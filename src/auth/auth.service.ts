@@ -18,34 +18,36 @@ export class AuthService {
     this.pepper = this.configService.getOrThrow<string>('PEPPER');
   }
 
-  register(createAuthDto: CreateUserDto) {
+  // actorId = id del super_admin que crea
+  register(actorId: string, dto: CreateUserDto) {
     return handleRequest(async () => {
-      const hashed = await hashPassword(
-        createAuthDto.password,
-        undefined,
-        this.pepper,
-      );
+      const hashed = await hashPassword(dto.password, undefined, this.pepper);
+
       const user = await this.prisma.user.create({
         data: {
-          email: createAuthDto.email,
-          username: createAuthDto.email.split('@')[0],
+          email: dto.email,
+          username: dto.email.split('@')[0],
           hashedPassword: hashed,
+          createdBy: actorId,
+          updatedBy: actorId,
         },
         select: {
           id: true,
           email: true,
           username: true,
-          uploadDate: true,
+          createdAt: true, // reemplaza uploadDate
+          isActive: true,
         },
       });
+
       return user;
     });
   }
 
-  login(loginUserDto: LoginUserDto) {
+  login(dto: LoginUserDto) {
     return handleRequest(async () => {
       const user = await this.prisma.user.findUnique({
-        where: { email: loginUserDto.email },
+        where: { email: dto.email },
         select: {
           id: true,
           email: true,
@@ -55,26 +57,18 @@ export class AuthService {
         },
       });
 
-      if (!user) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
+      if (!user) throw new UnauthorizedException('Invalid credentials');
+      if (!user.isActive) throw new UnauthorizedException('User is blocked');
 
-      if (!user.isActive) {
-        throw new UnauthorizedException('User is blocked');
-      }
-
-      const isPasswordValid = await verifyPassword(
+      const ok = await verifyPassword(
         user.hashedPassword,
-        loginUserDto.password,
+        dto.password,
         this.pepper,
       );
-
-      if (!isPasswordValid) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
+      if (!ok) throw new UnauthorizedException('Invalid credentials');
 
       const token = await this.getJwtUtils.generateAccessToken({
-        sub: user.id.toString(),
+        sub: user.id,
       });
 
       return {

@@ -12,6 +12,8 @@ import { HotelsService } from './hotels.service';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { Auth } from '@/auth/decorators/auth.decorator';
+import { GetUser } from '@/auth/decorators/get-user.decorator';
+import { User } from '@prisma/client';
 
 @Auth()
 @Controller('hotels')
@@ -19,14 +21,9 @@ export class HotelsController {
   constructor(private readonly hotelsService: HotelsService) {}
 
   @Post()
-  create(@Body() createHotelDto: CreateHotelDto) {
-    return this.hotelsService.create(createHotelDto);
+  create(@GetUser() user: User, @Body() createHotelDto: CreateHotelDto) {
+    return this.hotelsService.create(user.id, createHotelDto);
   }
-
-  // @Get()
-  // findAll() {
-  //   return this.hotelsService.findAll();
-  // }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
@@ -35,14 +32,15 @@ export class HotelsController {
 
   @Patch(':id')
   update(
+    @GetUser() user: User,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateHotelDto: UpdateHotelDto,
   ) {
-    return this.hotelsService.update(id, updateHotelDto);
+    return this.hotelsService.update(user.id, id, updateHotelDto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.hotelsService.remove(id);
+  remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
+    return this.hotelsService.remove(user.id, id);
   }
 }

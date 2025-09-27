@@ -6,28 +6,28 @@ import { LoginThrottleGuard } from './guards/login-throttle/login-throttle.guard
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { Auth } from './decorators/auth.decorator';
 import { ValidRoles } from './interfaces/valid-roles.interface';
+import { GetUser } from './decorators/get-user.decorator';
+import { User } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { ttl: 600000, limit: 10 } }) // register: 5/min
+  @Throttle({ default: { ttl: 600000, limit: 10 } }) // 10 cada 10 min
   @Auth(ValidRoles.super_admin)
   @Post('register')
-  create(@Body() createAuthDto: CreateUserDto) {
-    return this.authService.register(createAuthDto);
+  create(@GetUser() actor: User, @Body() dto: CreateUserDto) {
+    return this.authService.register(actor.id, dto);
   }
 
   @UseGuards(LoginThrottleGuard)
   @Throttle({
-    burst: { ttl: 15000, limit: 3 }, // anti-ráfaga: 3 cada 15s
-    sustained: { ttl: 600000, limit: 10 }, // sostenido: 10 cada 5 minutos
-    // ojo si entramos en 429 y seguimos mandando empieza a contar para el limite de 10
-    // cada request aumentan el contador en paralelo para los dos casos
+    burst: { ttl: 15000, limit: 3 },
+    sustained: { ttl: 600000, limit: 10 },
   })
   @Post('login')
-  login(@Body() loginUserDto: LoginUserDto) {
-    return this.authService.login(loginUserDto);
+  login(@Body() dto: LoginUserDto) {
+    return this.authService.login(dto);
   }
 }

@@ -9,7 +9,8 @@ import { CommonPricePolicies } from '../common/policies/price.policies';
 export class ExcursionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createExcursionDto: CreateExcursionDto) {
+  // actorId = id del usuario autenticado
+  create(actorId: string, createExcursionDto: CreateExcursionDto) {
     return handleRequest(async () => {
       CommonPricePolicies.assertCreatePrice(
         createExcursionDto,
@@ -28,26 +29,23 @@ export class ExcursionsService {
           excursionDate: createExcursionDto.excursionDate,
           excursionName: createExcursionDto.excursionName,
           reservationId: createExcursionDto.reservationId,
+
+          // sellos requeridos por el nuevo schema
+          createdBy: actorId,
+          updatedBy: actorId,
         },
       });
     });
   }
 
-  // findAll() {
-  //   return handleRequest(async () => {
-  //     return this.prisma.excursion.findMany();
-  //   });
-  // }
-
   findOne(id: string) {
     return handleRequest(() =>
-      this.prisma.excursion.findUniqueOrThrow({
-        where: { id },
-      }),
+      this.prisma.excursion.findUniqueOrThrow({ where: { id } }),
     );
   }
 
-  update(id: string, updateExcursionDto: UpdateExcursionDto) {
+  // actorId = id del usuario autenticado
+  update(actorId: string, id: string, updateExcursionDto: UpdateExcursionDto) {
     return handleRequest(async () => {
       const current = await this.prisma.excursion.findUniqueOrThrow({
         where: { id },
@@ -79,16 +77,16 @@ export class ExcursionsService {
           excursionDate: updateExcursionDto.excursionDate ?? undefined,
           excursionName: updateExcursionDto.excursionName ?? undefined,
           reservationId: updateExcursionDto.reservationId ?? undefined,
+
+          // sello de último editor
+          updatedBy: actorId,
         },
       });
     });
   }
 
-  remove(id: string) {
-    return handleRequest(() =>
-      this.prisma.excursion.delete({
-        where: { id },
-      }),
-    );
+  remove(actorId: string, id: string) {
+    // Si más adelante hacés soft delete, acá iría deletedBy/At.
+    return handleRequest(() => this.prisma.excursion.delete({ where: { id } }));
   }
 }

@@ -8,42 +8,48 @@ import { UpdateReservationDto } from './dto/update-reservation.dto';
 export class ReservationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(dto: CreateReservationDto) {
+  // actorId = id del usuario autenticado
+  create(actorId: string, dto: CreateReservationDto) {
     return handleRequest(() =>
       this.prisma.$transaction(async (tx) => {
+        // Validación de PAX existentes
         const paxIds = [...new Set(dto.paxIds)];
-
         const foundPax = await tx.pax.findMany({
           where: { id: { in: paxIds } },
           select: { id: true },
         });
-        const foundPaxSet = new Set(foundPax.map((pax) => pax.id));
-        const missingPaxIds = paxIds.filter((id) => !foundPaxSet.has(id));
-        if (missingPaxIds.length > 0) {
+        const foundPaxSet = new Set(foundPax.map((p) => p.id));
+        const missing = paxIds.filter((id) => !foundPaxSet.has(id));
+        if (missing.length) {
           throw new NotFoundException(
-            `Some pax were not found: ${missingPaxIds.join(', ')}`,
+            `Some pax were not found: ${missing.join(', ')}`,
           );
         }
 
-        return tx.reservation.create({
+        // Crear reserva + join a pax (sellos en todas las filas)
+        const res = await tx.reservation.create({
           data: {
             userId: dto.userId,
             totalPrice: dto.totalPrice,
             state: dto.state,
+            createdBy: actorId,
+            updatedBy: actorId,
             paxReservations: {
               create: paxIds.map((paxId) => ({
                 pax: { connect: { id: paxId } },
+                createdBy: actorId,
+                updatedBy: actorId,
               })),
             },
           },
           include: {
             paxReservations: {
-              include: {
-                pax: { include: { passport: true, dni: true } },
-              },
+              include: { pax: { include: { passport: true, dni: true } } },
             },
           },
         });
+
+        return res;
       }),
     );
   }
@@ -51,12 +57,10 @@ export class ReservationsService {
   findAll() {
     return handleRequest(() =>
       this.prisma.reservation.findMany({
-        orderBy: { uploadDate: 'desc' },
+        orderBy: { createdAt: 'desc' }, // reemplaza uploadDate
         include: {
           paxReservations: {
-            include: {
-              pax: { include: { passport: true, dni: true } },
-            },
+            include: { pax: { include: { passport: true, dni: true } } },
           },
         },
       }),
@@ -69,16 +73,15 @@ export class ReservationsService {
         where: { id },
         include: {
           paxReservations: {
-            include: {
-              pax: { include: { passport: true, dni: true } },
-            },
+            include: { pax: { include: { passport: true, dni: true } } },
           },
         },
       }),
     );
   }
 
-  update(id: string, dto: UpdateReservationDto) {
+  // actorId = id del usuario autenticado
+  update(actorId: string, id: string, dto: UpdateReservationDto) {
     return handleRequest(() =>
       this.prisma.reservation.update({
         where: { id },
@@ -87,27 +90,25 @@ export class ReservationsService {
             totalPrice: dto.totalPrice,
           }),
           ...(dto.state && { state: dto.state }),
+          updatedBy: actorId,
         },
         include: {
           paxReservations: {
-            include: {
-              pax: { include: { passport: true, dni: true } },
-            },
+            include: { pax: { include: { passport: true, dni: true } } },
           },
         },
       }),
     );
   }
 
-  remove(id: string) {
+  // actorId = id del usuario autenticado
+  remove(actorId: string, id: string) {
     return handleRequest(() =>
       this.prisma.reservation.delete({
         where: { id },
         include: {
           paxReservations: {
-            include: {
-              pax: { include: { passport: true, dni: true } },
-            },
+            include: { pax: { include: { passport: true, dni: true } } },
           },
         },
       }),

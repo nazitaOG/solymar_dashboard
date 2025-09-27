@@ -10,9 +10,9 @@ import { providedPair } from '../common/utils/value-guards';
 export class PaxService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(dto: CreatePaxDto) {
+  // actorId = id del usuario autenticado
+  create(actorId: string, dto: CreatePaxDto) {
     return handleRequest(() => {
-      // Validaciones de negocio centralizadas
       PaxPolicies.assertCreate(dto);
 
       const hasPassport = providedPair(
@@ -24,15 +24,20 @@ export class PaxService {
       return this.prisma.pax.create({
         data: {
           name: dto.name,
-          birthDate: new Date(dto.birthDate), // ISO → Date
+          birthDate: new Date(dto.birthDate),
           nationality: dto.nationality,
-          // uploadDate lo setea la DB con @default(now())
+
+          // sellos del nuevo esquema
+          createdBy: actorId,
+          updatedBy: actorId,
 
           passport: hasPassport
             ? {
                 create: {
-                  passportNum: dto.passportNum!, // ya validado arriba
-                  expirationDate: new Date(dto.passportExpirationDate!), // ya validado arriba
+                  passportNum: dto.passportNum,
+                  expirationDate: new Date(dto.passportExpirationDate),
+                  createdBy: actorId,
+                  updatedBy: actorId,
                 },
               }
             : undefined,
@@ -40,8 +45,10 @@ export class PaxService {
           dni: hasDni
             ? {
                 create: {
-                  dniNum: dto.dniNum!, // ya validado arriba
-                  expirationDate: new Date(dto.dniExpirationDate!), // ya validado arriba
+                  dniNum: dto.dniNum,
+                  expirationDate: new Date(dto.dniExpirationDate),
+                  createdBy: actorId,
+                  updatedBy: actorId,
                 },
               }
             : undefined,
@@ -54,7 +61,8 @@ export class PaxService {
   findAll() {
     return handleRequest(() =>
       this.prisma.pax.findMany({
-        orderBy: { uploadDate: 'desc' },
+        orderBy: { createdAt: 'desc' }, // antes usabas uploadDate
+        include: { passport: true, dni: true },
       }),
     );
   }
@@ -63,86 +71,86 @@ export class PaxService {
     return handleRequest(() =>
       this.prisma.pax.findUniqueOrThrow({
         where: { id },
-        include: {
-          passport: true,
-          dni: true,
-        },
+        include: { passport: true, dni: true },
       }),
     );
   }
 
-  update(id: string, updatePaxDto: UpdatePaxDto) {
+  // actorId = id del usuario autenticado
+  update(actorId: string, id: string, dto: UpdatePaxDto) {
     return handleRequest(() => {
-      PaxPolicies.assertUpdate(updatePaxDto);
+      PaxPolicies.assertUpdate(dto);
+
       return this.prisma.pax.update({
         where: { id },
         data: {
-          name: updatePaxDto.name ?? undefined,
-          nationality: updatePaxDto.nationality ?? undefined,
-          birthDate: updatePaxDto.birthDate ?? undefined,
+          name: dto.name ?? undefined,
+          nationality: dto.nationality ?? undefined,
+          birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
+
+          // sello de último editor
+          updatedBy: actorId,
+
           passport:
-            updatePaxDto.passportNum !== undefined ||
-            updatePaxDto.passportExpirationDate !== undefined
+            dto.passportNum !== undefined ||
+            dto.passportExpirationDate !== undefined
               ? {
                   upsert: {
                     update: {
                       passportNum:
-                        updatePaxDto.passportNum !== undefined
-                          ? updatePaxDto.passportNum
+                        dto.passportNum !== undefined
+                          ? dto.passportNum
                           : undefined,
                       expirationDate:
-                        updatePaxDto.passportExpirationDate !== undefined
-                          ? new Date(updatePaxDto.passportExpirationDate)
+                        dto.passportExpirationDate !== undefined
+                          ? new Date(dto.passportExpirationDate)
                           : undefined,
+
+                      // sello en nested update
+                      updatedBy: actorId,
                     },
                     create: (() => {
-                      if (
-                        !updatePaxDto.passportNum ||
-                        !updatePaxDto.passportExpirationDate
-                      ) {
+                      if (!dto.passportNum || !dto.passportExpirationDate) {
                         throw new BadRequestException(
                           'Pasaporte: número y fecha son requeridos para crear.',
                         );
                       }
                       return {
-                        passportNum: updatePaxDto.passportNum,
-                        expirationDate: new Date(
-                          updatePaxDto.passportExpirationDate,
-                        ),
+                        passportNum: dto.passportNum,
+                        expirationDate: new Date(dto.passportExpirationDate),
+                        createdBy: actorId,
+                        updatedBy: actorId,
                       };
                     })(),
                   },
                 }
               : undefined,
+
           dni:
-            updatePaxDto.dniNum !== undefined ||
-            updatePaxDto.dniExpirationDate !== undefined
+            dto.dniNum !== undefined || dto.dniExpirationDate !== undefined
               ? {
                   upsert: {
                     update: {
-                      dniNum:
-                        updatePaxDto.dniNum !== undefined
-                          ? updatePaxDto.dniNum
-                          : undefined,
+                      dniNum: dto.dniNum !== undefined ? dto.dniNum : undefined,
                       expirationDate:
-                        updatePaxDto.dniExpirationDate !== undefined
-                          ? new Date(updatePaxDto.dniExpirationDate)
+                        dto.dniExpirationDate !== undefined
+                          ? new Date(dto.dniExpirationDate)
                           : undefined,
+
+                      // sello en nested update
+                      updatedBy: actorId,
                     },
                     create: (() => {
-                      if (
-                        !updatePaxDto.dniNum ||
-                        !updatePaxDto.dniExpirationDate
-                      ) {
+                      if (!dto.dniNum || !dto.dniExpirationDate) {
                         throw new BadRequestException(
                           'DNI: número y fecha son requeridos para crear.',
                         );
                       }
                       return {
-                        dniNum: updatePaxDto.dniNum,
-                        expirationDate: new Date(
-                          updatePaxDto.dniExpirationDate,
-                        ),
+                        dniNum: dto.dniNum,
+                        expirationDate: new Date(dto.dniExpirationDate),
+                        createdBy: actorId,
+                        updatedBy: actorId,
                       };
                     })(),
                   },
@@ -154,7 +162,8 @@ export class PaxService {
     });
   }
 
-  remove(id: string) {
+  remove(actorId: string, id: string) {
+    // si luego haces soft delete, acá podrías registrar deletedBy/At
     return handleRequest(() =>
       this.prisma.pax.delete({
         where: { id },

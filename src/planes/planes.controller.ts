@@ -12,6 +12,8 @@ import { PlanesService } from './planes.service';
 import { CreatePlaneDto } from './dto/create-plane.dto';
 import { UpdatePlaneDto } from './dto/update-plane.dto';
 import { Auth } from '@/auth/decorators/auth.decorator';
+import { GetUser } from '@/auth/decorators/get-user.decorator';
+import { User } from '@prisma/client';
 
 @Auth()
 @Controller('planes')
@@ -19,8 +21,8 @@ export class PlanesController {
   constructor(private readonly planesService: PlanesService) {}
 
   @Post()
-  create(@Body() createPlaneDto: CreatePlaneDto) {
-    return this.planesService.create(createPlaneDto);
+  create(@GetUser() user: User, @Body() createPlaneDto: CreatePlaneDto) {
+    return this.planesService.create(user.id, createPlaneDto);
   }
 
   @Get(':id')
@@ -30,14 +32,15 @@ export class PlanesController {
 
   @Patch(':id')
   update(
+    @GetUser() user: User,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updatePlaneDto: UpdatePlaneDto,
   ) {
-    return this.planesService.update(id, updatePlaneDto);
+    return this.planesService.update(user.id, id, updatePlaneDto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.planesService.remove(id);
+  remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
+    return this.planesService.remove(user.id, id);
   }
 }

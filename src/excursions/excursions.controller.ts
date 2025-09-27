@@ -12,6 +12,8 @@ import { ExcursionsService } from './excursions.service';
 import { CreateExcursionDto } from './dto/create-excursion.dto';
 import { UpdateExcursionDto } from './dto/update-excursion.dto';
 import { Auth } from '@/auth/decorators/auth.decorator';
+import { GetUser } from '@/auth/decorators/get-user.decorator';
+import { User } from '@prisma/client';
 
 @Auth()
 @Controller('excursions')
@@ -19,14 +21,12 @@ export class ExcursionsController {
   constructor(private readonly excursionsService: ExcursionsService) {}
 
   @Post()
-  create(@Body() createExcursionDto: CreateExcursionDto) {
-    return this.excursionsService.create(createExcursionDto);
+  create(
+    @GetUser() user: User,
+    @Body() createExcursionDto: CreateExcursionDto,
+  ) {
+    return this.excursionsService.create(user.id, createExcursionDto);
   }
-
-  // @Get()
-  // findAll() {
-  //   return this.excursionsService.findAll();
-  // }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
@@ -35,14 +35,15 @@ export class ExcursionsController {
 
   @Patch(':id')
   update(
+    @GetUser() user: User,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateExcursionDto: UpdateExcursionDto,
   ) {
-    return this.excursionsService.update(id, updateExcursionDto);
+    return this.excursionsService.update(user.id, id, updateExcursionDto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.excursionsService.remove(id);
+  remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
+    return this.excursionsService.remove(user.id, id);
   }
 }

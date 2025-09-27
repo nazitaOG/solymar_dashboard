@@ -11,10 +11,11 @@ import { CommonPricePolicies } from '../common/policies/price.policies';
 export class TransfersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createTransferDto: CreateTransferDto) {
+  // actorId = id del usuario autenticado
+  create(actorId: string, dto: CreateTransferDto) {
     return handleRequest(async () => {
       CommonOriginDestinationPolicies.assertCreateDifferent(
-        createTransferDto,
+        dto,
         'origin',
         'destination',
         {
@@ -26,38 +27,40 @@ export class TransfersService {
       );
 
       CommonDatePolicies.assertCreateRange(
-        createTransferDto,
+        dto,
         'departureDate',
         'arrivalDate',
         {
           minDurationMinutes: 60,
           allowEqual: true,
-          labels: {
-            start: 'fecha de salida',
-            end: 'fecha de llegada',
-          },
+          labels: { start: 'fecha de salida', end: 'fecha de llegada' },
         },
       );
 
       CommonPricePolicies.assertCreatePrice(
-        createTransferDto,
+        dto,
         'totalPrice',
         'amountPaid',
+
         { labels: { total: 'total', paid: 'pagado' } },
       );
 
       return this.prisma.transfer.create({
         data: {
-          origin: createTransferDto.origin,
-          destination: createTransferDto.destination ?? undefined,
-          departureDate: createTransferDto.departureDate,
-          arrivalDate: createTransferDto.arrivalDate,
-          provider: createTransferDto.provider,
-          bookingReference: createTransferDto.bookingReference ?? undefined,
-          reservationId: createTransferDto.reservationId,
-          totalPrice: createTransferDto.totalPrice,
-          amountPaid: createTransferDto.amountPaid,
-          transportType: createTransferDto.transportType ?? undefined,
+          origin: dto.origin,
+          destination: dto.destination ?? undefined,
+          departureDate: dto.departureDate,
+          arrivalDate: dto.arrivalDate,
+          provider: dto.provider,
+          bookingReference: dto.bookingReference ?? undefined,
+          reservationId: dto.reservationId,
+          totalPrice: dto.totalPrice,
+          amountPaid: dto.amountPaid,
+          transportType: dto.transportType ?? undefined,
+
+          // sellos del nuevo schema
+          createdBy: actorId,
+          updatedBy: actorId,
         },
       });
     });
@@ -69,7 +72,8 @@ export class TransfersService {
     );
   }
 
-  update(id: string, updateTransferDto: UpdateTransferDto) {
+  // actorId = id del usuario autenticado
+  update(actorId: string, id: string, dto: UpdateTransferDto) {
     return handleRequest(async () => {
       const current = await this.prisma.transfer.findUniqueOrThrow({
         where: { id },
@@ -84,7 +88,7 @@ export class TransfersService {
       });
 
       CommonOriginDestinationPolicies.assertUpdateDifferent(
-        updateTransferDto,
+        dto,
         { a: current.origin, b: current.destination },
         'origin',
         'destination',
@@ -97,22 +101,19 @@ export class TransfersService {
       );
 
       CommonDatePolicies.assertUpdateRange(
-        updateTransferDto,
+        dto,
         { start: current.departureDate, end: current.arrivalDate },
         'departureDate',
         'arrivalDate',
         {
           minDurationMinutes: 60,
           allowEqual: true,
-          labels: {
-            start: 'fecha de salida',
-            end: 'fecha de llegada',
-          },
+          labels: { start: 'fecha de salida', end: 'fecha de llegada' },
         },
       );
 
       CommonPricePolicies.assertUpdatePrice(
-        updateTransferDto,
+        dto,
         { total: current.totalPrice, paid: current.amountPaid },
         'totalPrice',
         'amountPaid',
@@ -122,28 +123,28 @@ export class TransfersService {
       return this.prisma.transfer.update({
         where: { id },
         data: {
-          origin: updateTransferDto.origin ?? undefined,
-          destination: updateTransferDto.destination ?? undefined,
-          departureDate: updateTransferDto.departureDate ?? undefined,
-          arrivalDate: updateTransferDto.arrivalDate ?? undefined,
-          provider: updateTransferDto.provider ?? undefined,
-          bookingReference: updateTransferDto.bookingReference ?? undefined,
-          reservationId: updateTransferDto.reservationId ?? undefined,
+          origin: dto.origin ?? undefined,
+          destination: dto.destination ?? undefined,
+          departureDate: dto.departureDate ?? undefined,
+          arrivalDate: dto.arrivalDate ?? undefined,
+          provider: dto.provider ?? undefined,
+          bookingReference: dto.bookingReference ?? undefined,
+          reservationId: dto.reservationId ?? undefined,
           totalPrice:
-            typeof updateTransferDto.totalPrice === 'number'
-              ? updateTransferDto.totalPrice
-              : undefined,
+            typeof dto.totalPrice === 'number' ? dto.totalPrice : undefined,
           amountPaid:
-            typeof updateTransferDto.amountPaid === 'number'
-              ? updateTransferDto.amountPaid
-              : undefined,
-          transportType: updateTransferDto.transportType ?? undefined,
+            typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
+          transportType: dto.transportType ?? undefined,
+
+          // sello de último editor
+          updatedBy: actorId,
         },
       });
     });
   }
 
-  remove(id: string) {
+  remove(actorId: string, id: string) {
+    // si después hacés soft delete, acá registrarías deletedBy/At
     return handleRequest(() => this.prisma.transfer.delete({ where: { id } }));
   }
 }

@@ -10,7 +10,8 @@ import { CommonPricePolicies } from '../common/policies/price.policies';
 export class HotelsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createHotelDto: CreateHotelDto) {
+  // actorId = id del usuario autenticado
+  create(actorId: string, createHotelDto: CreateHotelDto) {
     return handleRequest(() => {
       CommonDatePolicies.assertCreateRange(
         createHotelDto,
@@ -18,10 +19,7 @@ export class HotelsService {
         'endDate',
         {
           allowEqual: true,
-          labels: {
-            start: 'fecha de inicio',
-            end: 'fecha de fin',
-          },
+          labels: { start: 'fecha de inicio', end: 'fecha de fin' },
         },
       );
 
@@ -44,27 +42,23 @@ export class HotelsService {
           roomType: createHotelDto.roomType,
           provider: createHotelDto.provider,
           reservationId: createHotelDto.reservationId,
+
+          // sellos del nuevo esquema
+          createdBy: actorId,
+          updatedBy: actorId,
         },
       });
     });
   }
 
-  // Si necesitas listar todos los hoteles, descomenta este método:
-  // findAll() {
-  //   return handleRequest(() => {
-  //     return this.prisma.hotel.findMany();
-  //   });
-  // }
-
   findOne(id: string) {
     return handleRequest(() =>
-      this.prisma.hotel.findUniqueOrThrow({
-        where: { id },
-      }),
+      this.prisma.hotel.findUniqueOrThrow({ where: { id } }),
     );
   }
 
-  update(id: string, updateHotelDto: UpdateHotelDto) {
+  // actorId = id del usuario autenticado
+  update(actorId: string, id: string, updateHotelDto: UpdateHotelDto) {
     return handleRequest(async () => {
       const current = await this.prisma.hotel.findUniqueOrThrow({
         where: { id },
@@ -83,10 +77,7 @@ export class HotelsService {
         'endDate',
         {
           allowEqual: true,
-          labels: {
-            start: 'fecha de inicio',
-            end: 'fecha de fin',
-          },
+          labels: { start: 'fecha de inicio', end: 'fecha de fin' },
         },
       );
 
@@ -117,16 +108,16 @@ export class HotelsService {
           roomType: updateHotelDto.roomType ?? undefined,
           provider: updateHotelDto.provider ?? undefined,
           reservationId: updateHotelDto.reservationId ?? undefined,
+
+          // sello de último editor
+          updatedBy: actorId,
         },
       });
     });
   }
 
-  remove(id: string) {
-    return handleRequest(() => {
-      return this.prisma.hotel.delete({
-        where: { id },
-      });
-    });
+  remove(actorId: string, id: string) {
+    // si en el futuro haces soft delete, acá guardarías deletedBy/At
+    return handleRequest(() => this.prisma.hotel.delete({ where: { id } }));
   }
 }

@@ -11,10 +11,11 @@ import { CommonPricePolicies } from '../common/policies/price.policies';
 export class PlanesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createPlaneDto: CreatePlaneDto) {
+  // actorId = id del usuario autenticado
+  create(actorId: string, dto: CreatePlaneDto) {
     return handleRequest(() => {
       CommonOriginDestinationPolicies.assertCreateDifferent(
-        createPlaneDto,
+        dto,
         'departure',
         'arrival',
         {
@@ -24,61 +25,56 @@ export class PlanesService {
           trim: true,
         },
       );
+
       CommonDatePolicies.assertUpdateRange(
-        createPlaneDto,
-        {
-          start: createPlaneDto.departureDate,
-          end: createPlaneDto.arrivalDate,
-        },
+        dto,
+        { start: dto.departureDate, end: dto.arrivalDate },
         'departureDate',
         'arrivalDate',
         {
           minDurationMinutes: 60,
           allowEqual: true,
-          labels: {
-            start: 'fecha de salida',
-            end: 'fecha de llegada',
-          },
+          labels: { start: 'fecha de salida', end: 'fecha de llegada' },
         },
       );
+
       CommonPricePolicies.assertCreatePrice(
-        createPlaneDto,
+        dto,
         'totalPrice',
         'amountPaid',
+
         { labels: { total: 'total', paid: 'pagado' } },
       );
+
       return this.prisma.plane.create({
         data: {
-          departure: createPlaneDto.departure,
-          arrival: createPlaneDto.arrival ?? undefined,
-          departureDate: createPlaneDto.departureDate,
-          arrivalDate: createPlaneDto.arrivalDate ?? undefined,
-          bookingReference: createPlaneDto.bookingReference,
-          provider: createPlaneDto.provider ?? undefined,
-          totalPrice: createPlaneDto.totalPrice,
-          amountPaid: createPlaneDto.amountPaid,
-          notes: createPlaneDto.notes ?? undefined,
-          reservationId: createPlaneDto.reservationId,
+          departure: dto.departure,
+          arrival: dto.arrival ?? undefined,
+          departureDate: dto.departureDate,
+          arrivalDate: dto.arrivalDate ?? undefined,
+          bookingReference: dto.bookingReference,
+          provider: dto.provider ?? undefined,
+          totalPrice: dto.totalPrice,
+          amountPaid: dto.amountPaid,
+          notes: dto.notes ?? undefined,
+          reservationId: dto.reservationId,
+
+          // sellos del nuevo esquema
+          createdBy: actorId,
+          updatedBy: actorId,
         },
       });
     });
   }
 
-  // findAll() {
-  //   return handleRequest(() => {
-  //     return this.prisma.plane.findMany();
-  //   });
-  // }
-
   findOne(id: string) {
-    return handleRequest(() => {
-      return this.prisma.plane.findUniqueOrThrow({
-        where: { id },
-      });
-    });
+    return handleRequest(() =>
+      this.prisma.plane.findUniqueOrThrow({ where: { id } }),
+    );
   }
 
-  update(id: string, updatePlaneDto: UpdatePlaneDto) {
+  // actorId = id del usuario autenticado
+  update(actorId: string, id: string, dto: UpdatePlaneDto) {
     return handleRequest(async () => {
       const current = await this.prisma.plane.findUniqueOrThrow({
         where: { id },
@@ -93,7 +89,7 @@ export class PlanesService {
       });
 
       CommonOriginDestinationPolicies.assertUpdateDifferent(
-        updatePlaneDto,
+        dto,
         { a: current.departure, b: current.arrival },
         'departure',
         'arrival',
@@ -106,22 +102,19 @@ export class PlanesService {
       );
 
       CommonDatePolicies.assertUpdateRange(
-        updatePlaneDto,
+        dto,
         { start: current.departureDate, end: current.arrivalDate },
         'departureDate',
         'arrivalDate',
         {
           minDurationMinutes: 60,
           allowEqual: true,
-          labels: {
-            start: 'fecha de salida',
-            end: 'fecha de llegada',
-          },
+          labels: { start: 'fecha de salida', end: 'fecha de llegada' },
         },
       );
 
       CommonPricePolicies.assertUpdatePrice(
-        updatePlaneDto,
+        dto,
         { total: current.totalPrice, paid: current.amountPaid },
         'totalPrice',
         'amountPaid',
@@ -131,32 +124,28 @@ export class PlanesService {
       return this.prisma.plane.update({
         where: { id },
         data: {
-          departure: updatePlaneDto.departure ?? undefined,
-          arrival: updatePlaneDto.arrival ?? undefined,
-          departureDate: updatePlaneDto.departureDate ?? undefined,
-          arrivalDate: updatePlaneDto.arrivalDate ?? undefined,
-          bookingReference: updatePlaneDto.bookingReference ?? undefined,
-          provider: updatePlaneDto.provider ?? undefined,
+          departure: dto.departure ?? undefined,
+          arrival: dto.arrival ?? undefined,
+          departureDate: dto.departureDate ?? undefined,
+          arrivalDate: dto.arrivalDate ?? undefined,
+          bookingReference: dto.bookingReference ?? undefined,
+          provider: dto.provider ?? undefined,
           totalPrice:
-            typeof updatePlaneDto.totalPrice === 'number'
-              ? updatePlaneDto.totalPrice
-              : undefined,
+            typeof dto.totalPrice === 'number' ? dto.totalPrice : undefined,
           amountPaid:
-            typeof updatePlaneDto.amountPaid === 'number'
-              ? updatePlaneDto.amountPaid
-              : undefined,
-          notes: updatePlaneDto.notes ?? undefined,
-          reservationId: updatePlaneDto.reservationId ?? undefined,
+            typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
+          notes: dto.notes ?? undefined,
+          reservationId: dto.reservationId ?? undefined,
+
+          // sello de último editor
+          updatedBy: actorId,
         },
       });
     });
   }
 
-  remove(id: string) {
-    return handleRequest(() => {
-      return this.prisma.plane.delete({
-        where: { id },
-      });
-    });
+  remove(actorId: string, id: string) {
+    // si luego haces soft delete, acá guardarías deletedBy/At
+    return handleRequest(() => this.prisma.plane.delete({ where: { id } }));
   }
 }
