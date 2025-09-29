@@ -1,5 +1,13 @@
-import { IsNotEmpty, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 import { ToLowerTrim } from '../../common/decorators/string.decorators';
+import { ValidRoles } from '../interfaces/valid-roles.interface';
 
 const PASSWORD_REGEX =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[\s\S]{8,}$/;
@@ -11,6 +19,12 @@ const PASSWORD_REGEX =
 // - 8+ caracteres
 
 export class CreateUserDto {
+  @IsOptional()
+  @IsEnum(ValidRoles, {
+    message: `role debe ser uno de: ${Object.values(ValidRoles).join(', ')}`,
+  })
+  role?: ValidRoles;
+
   @IsString()
   @IsNotEmpty()
   @MaxLength(64)

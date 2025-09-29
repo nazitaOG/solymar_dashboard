@@ -47,7 +47,7 @@ model User {
 
 model Role {
   id          String @id @default(uuid()) @db.Uuid
-  description String
+  description String @unique
 
   // audit
   createdAt DateTime @default(now())

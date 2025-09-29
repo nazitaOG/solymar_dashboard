@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from '../common/prisma/prisma.service';
@@ -6,6 +6,7 @@ import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { hashPassword, verifyPassword } from '../common/security/hash_password';
 import { LoginUserDto } from './dto/login-user.dto';
 import { GetJwtUtils } from './utils/get-jwt.utils';
+import { ValidRoles } from './interfaces/valid-roles.interface';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,16 @@ export class AuthService {
     return handleRequest(async () => {
       const hashed = await hashPassword(dto.password, undefined, this.pepper);
 
+      const roleDescription = dto.role ?? ValidRoles.user;
+
+      const role = await this.prisma.role.findUnique({
+        where: { description: roleDescription },
+        select: { id: true },
+      });
+      if (!role) {
+        throw new BadRequestException(`Rol inválido: ${roleDescription}`);
+      }
+
       const user = await this.prisma.user.create({
         data: {
           email: dto.email,
@@ -30,6 +41,13 @@ export class AuthService {
           hashedPassword: hashed,
           createdBy: actorId,
           updatedBy: actorId,
+          roleUsers: {
+            create: {
+              roleId: role.id,
+              createdBy: actorId,
+              updatedBy: actorId,
+            },
+          },
         },
         select: {
           id: true,
