@@ -7,7 +7,7 @@ import { CommonDatePolicies } from '../common/policies/date.policies';
 import { CommonOriginDestinationPolicies } from '../common/policies/origin-destination.policies';
 import { CommonPricePolicies } from '../common/policies/price.policies';
 import { PrismaClient } from '@prisma/client';
-import { touchReservation } from '../common/db/touch-audit-reservation';
+import { touchReservation } from '../common/db/touch-reservation.db';
 
 @Injectable()
 export class PlanesService {
@@ -45,7 +45,7 @@ export class PlanesService {
       });
 
       return this.prisma.$transaction(async (tx: PrismaClient) => {
-        const plane = await tx.plane.create({
+        const created = await tx.plane.create({
           data: {
             departure: dto.departure,
             arrival: dto.arrival ?? undefined,
@@ -60,11 +60,20 @@ export class PlanesService {
             createdBy: actorId,
             updatedBy: actorId,
           },
-          select: { id: true, reservationId: true },
+          select: {
+            id: true,
+            reservationId: true,
+            totalPrice: true,
+            amountPaid: true,
+          },
         });
 
-        await touchReservation(tx, plane.reservationId, actorId);
-        return plane;
+        await touchReservation(tx, created.reservationId, actorId, {
+          totalAdjustment: Number(created.totalPrice),
+          paidAdjustment: Number(created.amountPaid),
+        });
+
+        return { id: created.id };
       });
     });
   }
@@ -87,7 +96,7 @@ export class PlanesService {
           arrival: true,
           totalPrice: true,
           amountPaid: true,
-          reservationId: true, // usamos esta, NO del dto
+          reservationId: true,
         },
       });
 
@@ -125,7 +134,7 @@ export class PlanesService {
       );
 
       return this.prisma.$transaction(async (tx: PrismaClient) => {
-        const plane = await tx.plane.update({
+        const updated = await tx.plane.update({
           where: { id },
           data: {
             departure: dto.departure ?? undefined,
@@ -139,27 +148,46 @@ export class PlanesService {
             amountPaid:
               typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
             notes: dto.notes ?? undefined,
-            // NO permitir mover de reserva → no tocar reservationId
+            // NO permitir mover de reserva
             updatedBy: actorId,
           },
-          select: { id: true }, // no necesitamos volver a pedir reservationId
+          select: { id: true },
         });
 
-        await touchReservation(tx, current.reservationId, actorId);
-        return plane;
+        await touchReservation(tx, current.reservationId, actorId, {
+          totalAdjustment:
+            typeof dto.totalPrice === 'number'
+              ? Number(dto.totalPrice) - current.totalPrice.toNumber()
+              : 0,
+          paidAdjustment:
+            typeof dto.amountPaid === 'number'
+              ? Number(dto.amountPaid) - current.amountPaid.toNumber()
+              : 0,
+        });
+
+        return updated;
       });
     });
   }
 
   remove(actorId: string, id: string) {
-    // hard delete + touch en una sola consulta
     return handleRequest(async () => {
       return this.prisma.$transaction(async (tx: PrismaClient) => {
         const deleted = await tx.plane.delete({
           where: { id },
-          select: { id: true, reservationId: true },
+          select: {
+            id: true,
+            reservationId: true,
+            totalPrice: true,
+            amountPaid: true,
+          },
         });
-        await touchReservation(tx, deleted.reservationId, actorId);
+
+        await touchReservation(tx, deleted.reservationId, actorId, {
+          totalAdjustment: -deleted.totalPrice.toNumber(),
+          paidAdjustment: -deleted.amountPaid.toNumber(),
+        });
+
         return { id: deleted.id };
       });
     });

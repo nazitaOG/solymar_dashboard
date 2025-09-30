@@ -6,20 +6,18 @@ import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { CommonDatePolicies } from '../common/policies/date.policies';
 import { CommonPricePolicies } from '../common/policies/price.policies';
 import { PrismaClient } from '@prisma/client';
-import { touchReservation } from '../common/db/touch-audit-reservation';
+import { touchReservation } from '../common/db/touch-reservation.db';
 
 @Injectable()
 export class HotelsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // actorId = id del usuario autenticado
   create(actorId: string, dto: CreateHotelDto) {
     return handleRequest(async () => {
       CommonDatePolicies.assertCreateRange(dto, 'startDate', 'endDate', {
         allowEqual: true,
         labels: { start: 'fecha de inicio', end: 'fecha de fin' },
       });
-
       CommonPricePolicies.assertCreatePrice(dto, 'totalPrice', 'amountPaid', {
         labels: { total: 'total', paid: 'pagado' },
       });
@@ -40,11 +38,20 @@ export class HotelsService {
             createdBy: actorId,
             updatedBy: actorId,
           },
-          select: { id: true, reservationId: true },
+          select: {
+            id: true,
+            reservationId: true,
+            totalPrice: true,
+            amountPaid: true,
+          },
         });
 
-        await touchReservation(tx, hotel.reservationId, actorId);
-        return hotel;
+        await touchReservation(tx, hotel.reservationId, actorId, {
+          totalAdjustment: Number(hotel.totalPrice),
+          paidAdjustment: Number(hotel.amountPaid),
+        });
+
+        return { id: hotel.id };
       });
     });
   }
@@ -55,7 +62,6 @@ export class HotelsService {
     );
   }
 
-  // actorId = id del usuario autenticado
   update(actorId: string, id: string, dto: UpdateHotelDto) {
     return handleRequest(async () => {
       const current = await this.prisma.hotel.findUniqueOrThrow({
@@ -65,7 +71,7 @@ export class HotelsService {
           endDate: true,
           totalPrice: true,
           amountPaid: true,
-          reservationId: true, // ← usamos esta, no el DTO
+          reservationId: true,
         },
       });
 
@@ -79,7 +85,6 @@ export class HotelsService {
           labels: { start: 'fecha de inicio', end: 'fecha de fin' },
         },
       );
-
       CommonPricePolicies.assertUpdatePrice(
         dto,
         { total: current.totalPrice, paid: current.amountPaid },
@@ -89,7 +94,7 @@ export class HotelsService {
       );
 
       return this.prisma.$transaction(async (tx: PrismaClient) => {
-        const hotel = await tx.hotel.update({
+        const updated = await tx.hotel.update({
           where: { id },
           data: {
             startDate: dto.startDate ?? undefined,
@@ -103,27 +108,45 @@ export class HotelsService {
               typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
             roomType: dto.roomType ?? undefined,
             provider: dto.provider ?? undefined,
-            // NO permitir mover de reserva → no tocar reservationId
             updatedBy: actorId,
           },
-          select: { id: true }, // no necesitamos volver a pedir reservationId
+          select: { id: true },
         });
 
-        await touchReservation(tx, current.reservationId, actorId);
-        return hotel;
+        await touchReservation(tx, current.reservationId, actorId, {
+          totalAdjustment:
+            typeof dto.totalPrice === 'number'
+              ? Number(dto.totalPrice) - current.totalPrice.toNumber()
+              : 0,
+          paidAdjustment:
+            typeof dto.amountPaid === 'number'
+              ? Number(dto.amountPaid) - current.amountPaid.toNumber()
+              : 0,
+        });
+
+        return updated;
       });
     });
   }
 
   remove(actorId: string, id: string) {
-    // hard delete + touch en una sola consulta
     return handleRequest(async () => {
       return this.prisma.$transaction(async (tx: PrismaClient) => {
         const deleted = await tx.hotel.delete({
           where: { id },
-          select: { id: true, reservationId: true },
+          select: {
+            id: true,
+            reservationId: true,
+            totalPrice: true,
+            amountPaid: true,
+          },
         });
-        await touchReservation(tx, deleted.reservationId, actorId);
+
+        await touchReservation(tx, deleted.reservationId, actorId, {
+          totalAdjustment: -deleted.totalPrice.toNumber(),
+          paidAdjustment: -deleted.amountPaid.toNumber(),
+        });
+
         return { id: deleted.id };
       });
     });

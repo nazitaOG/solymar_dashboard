@@ -6,7 +6,7 @@ import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { CommonOriginDestinationPolicies } from '../common/policies/origin-destination.policies';
 import { CommonDatePolicies } from '../common/policies/date.policies';
 import { CommonPricePolicies } from '../common/policies/price.policies';
-import { touchReservation } from '../common/db/touch-audit-reservation';
+import { touchReservation } from '../common/db/touch-reservation.db';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
@@ -67,7 +67,10 @@ export class CruisesService {
             updatedBy: actorId,
           },
         });
-        await touchReservation(tx, createCruiseDto.reservationId, actorId);
+        await touchReservation(tx, createCruiseDto.reservationId, actorId, {
+          totalAdjustment: createCruiseDto.totalPrice,
+          paidAdjustment: createCruiseDto.amountPaid,
+        });
         return cruise;
       });
     });
@@ -146,11 +149,20 @@ export class CruisesService {
               typeof updateCruiseDto.amountPaid === 'number'
                 ? updateCruiseDto.amountPaid
                 : undefined,
-            // 🔐 sello requerido por el nuevo schema
+            // sello requerido por el nuevo schema
             updatedBy: actorId,
           },
         });
-        await touchReservation(tx, current.reservationId, actorId);
+        await touchReservation(tx, current.reservationId, actorId, {
+          totalAdjustment:
+            typeof updateCruiseDto.totalPrice === 'number'
+              ? updateCruiseDto.totalPrice - current.totalPrice.toNumber()
+              : 0,
+          paidAdjustment:
+            typeof updateCruiseDto.amountPaid === 'number'
+              ? updateCruiseDto.amountPaid - current.amountPaid.toNumber()
+              : 0,
+        });
         return cruise;
       });
     });
@@ -161,9 +173,17 @@ export class CruisesService {
       return this.prisma.$transaction(async (tx: PrismaClient) => {
         const deleted = await tx.cruise.delete({
           where: { id },
-          select: { id: true, reservationId: true },
+          select: {
+            id: true,
+            reservationId: true,
+            totalPrice: true,
+            amountPaid: true,
+          },
         });
-        await touchReservation(tx, deleted.reservationId, actorId);
+        await touchReservation(tx, deleted.reservationId, actorId, {
+          totalAdjustment: -deleted.totalPrice.toNumber(),
+          paidAdjustment: -deleted.amountPaid.toNumber(),
+        });
         return { id: deleted.id };
       });
     });

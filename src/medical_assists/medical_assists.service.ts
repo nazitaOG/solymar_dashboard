@@ -5,13 +5,12 @@ import { CreateMedicalAssistDto } from './dto/create-medical_assist.dto';
 import { UpdateMedicalAssistDto } from './dto/update-medical_assist.dto';
 import { CommonPricePolicies } from '../common/policies/price.policies';
 import { PrismaClient } from '@prisma/client';
-import { touchReservation } from '../common/db/touch-audit-reservation';
+import { touchReservation } from '../common/db/touch-reservation.db';
 
 @Injectable()
 export class MedicalAssistsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // actorId = id del usuario autenticado
   create(actorId: string, dto: CreateMedicalAssistDto) {
     return handleRequest(async () => {
       CommonPricePolicies.assertCreatePrice(dto, 'totalPrice', 'amountPaid', {
@@ -19,7 +18,7 @@ export class MedicalAssistsService {
       });
 
       return this.prisma.$transaction(async (tx: PrismaClient) => {
-        const medical_assist = await tx.medicalAssist.create({
+        const created = await tx.medicalAssist.create({
           data: {
             reservationId: dto.reservationId,
             bookingReference: dto.bookingReference,
@@ -30,11 +29,20 @@ export class MedicalAssistsService {
             createdBy: actorId,
             updatedBy: actorId,
           },
-          select: { id: true, reservationId: true },
+          select: {
+            id: true,
+            reservationId: true,
+            totalPrice: true,
+            amountPaid: true,
+          },
         });
 
-        await touchReservation(tx, medical_assist.reservationId, actorId);
-        return medical_assist;
+        await touchReservation(tx, created.reservationId, actorId, {
+          totalAdjustment: Number(created.totalPrice),
+          paidAdjustment: Number(created.amountPaid),
+        });
+
+        return { id: created.id };
       });
     });
   }
@@ -45,13 +53,11 @@ export class MedicalAssistsService {
     );
   }
 
-  // actorId = id del usuario autenticado
   update(actorId: string, id: string, dto: UpdateMedicalAssistDto) {
     return handleRequest(async () => {
-      // Traemos valores actuales para validar y obtener reservationId
       const current = await this.prisma.medicalAssist.findUniqueOrThrow({
         where: { id },
-        select: { totalPrice: true, amountPaid: true, reservationId: true },
+        select: { reservationId: true, totalPrice: true, amountPaid: true },
       });
 
       CommonPricePolicies.assertUpdatePrice(
@@ -63,10 +69,9 @@ export class MedicalAssistsService {
       );
 
       return this.prisma.$transaction(async (tx: PrismaClient) => {
-        const medical_assist = await tx.medicalAssist.update({
+        const updated = await tx.medicalAssist.update({
           where: { id },
           data: {
-            // NO permitir mover de reserva → no tocar reservationId
             bookingReference: dto.bookingReference ?? undefined,
             assistType: dto.assistType ?? undefined,
             provider: dto.provider ?? undefined,
@@ -76,24 +81,43 @@ export class MedicalAssistsService {
               typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
             updatedBy: actorId,
           },
-          select: { id: true }, // no necesitamos reservationId aquí
+          select: { id: true },
         });
 
-        await touchReservation(tx, current.reservationId, actorId);
-        return medical_assist;
+        await touchReservation(tx, current.reservationId, actorId, {
+          totalAdjustment:
+            typeof dto.totalPrice === 'number'
+              ? Number(dto.totalPrice) - current.totalPrice.toNumber()
+              : 0,
+          paidAdjustment:
+            typeof dto.amountPaid === 'number'
+              ? Number(dto.amountPaid) - current.amountPaid.toNumber()
+              : 0,
+        });
+
+        return updated;
       });
     });
   }
 
   remove(actorId: string, id: string) {
-    // hard delete + touch en una sola consulta
     return handleRequest(async () => {
       return this.prisma.$transaction(async (tx: PrismaClient) => {
         const deleted = await tx.medicalAssist.delete({
           where: { id },
-          select: { id: true, reservationId: true },
+          select: {
+            id: true,
+            reservationId: true,
+            totalPrice: true,
+            amountPaid: true,
+          },
         });
-        await touchReservation(tx, deleted.reservationId, actorId);
+
+        await touchReservation(tx, deleted.reservationId, actorId, {
+          totalAdjustment: -deleted.totalPrice.toNumber(),
+          paidAdjustment: -deleted.amountPaid.toNumber(),
+        });
+
         return { id: deleted.id };
       });
     });

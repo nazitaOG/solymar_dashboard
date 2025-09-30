@@ -7,13 +7,12 @@ import { CommonDatePolicies } from '../common/policies/date.policies';
 import { CommonOriginDestinationPolicies } from '../common/policies/origin-destination.policies';
 import { CommonPricePolicies } from '../common/policies/price.policies';
 import { PrismaClient } from '@prisma/client';
-import { touchReservation } from '../common/db/touch-audit-reservation';
+import { touchReservation } from '../common/db/touch-reservation.db';
 
 @Injectable()
 export class TransfersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // actorId = id del usuario autenticado
   create(actorId: string, dto: CreateTransferDto) {
     return handleRequest(async () => {
       CommonOriginDestinationPolicies.assertCreateDifferent(
@@ -44,7 +43,7 @@ export class TransfersService {
       });
 
       return this.prisma.$transaction(async (tx: PrismaClient) => {
-        const transfer = await tx.transfer.create({
+        const created = await tx.transfer.create({
           data: {
             origin: dto.origin,
             destination: dto.destination ?? undefined,
@@ -59,11 +58,20 @@ export class TransfersService {
             createdBy: actorId,
             updatedBy: actorId,
           },
-          select: { id: true, reservationId: true },
+          select: {
+            id: true,
+            reservationId: true,
+            totalPrice: true,
+            amountPaid: true,
+          },
         });
 
-        await touchReservation(tx, transfer.reservationId, actorId);
-        return transfer;
+        await touchReservation(tx, created.reservationId, actorId, {
+          totalAdjustment: Number(created.totalPrice),
+          paidAdjustment: Number(created.amountPaid),
+        });
+
+        return { id: created.id };
       });
     });
   }
@@ -74,7 +82,6 @@ export class TransfersService {
     );
   }
 
-  // actorId = id del usuario autenticado
   update(actorId: string, id: string, dto: UpdateTransferDto) {
     return handleRequest(async () => {
       const current = await this.prisma.transfer.findUniqueOrThrow({
@@ -86,7 +93,7 @@ export class TransfersService {
           destination: true,
           totalPrice: true,
           amountPaid: true,
-          reservationId: true, // usamos este, no el dto
+          reservationId: true,
         },
       });
 
@@ -124,7 +131,7 @@ export class TransfersService {
       );
 
       return this.prisma.$transaction(async (tx: PrismaClient) => {
-        const transfer = await tx.transfer.update({
+        const updated = await tx.transfer.update({
           where: { id },
           data: {
             origin: dto.origin ?? undefined,
@@ -133,7 +140,6 @@ export class TransfersService {
             arrivalDate: dto.arrivalDate ?? undefined,
             provider: dto.provider ?? undefined,
             bookingReference: dto.bookingReference ?? undefined,
-            // NO permitir mover de reserva → NO tocar reservationId
             totalPrice:
               typeof dto.totalPrice === 'number' ? dto.totalPrice : undefined,
             amountPaid:
@@ -141,24 +147,43 @@ export class TransfersService {
             transportType: dto.transportType ?? undefined,
             updatedBy: actorId,
           },
-          select: { id: true }, // no necesitamos reservationId
+          select: { id: true },
         });
 
-        await touchReservation(tx, current.reservationId, actorId);
-        return transfer;
+        await touchReservation(tx, current.reservationId, actorId, {
+          totalAdjustment:
+            typeof dto.totalPrice === 'number'
+              ? Number(dto.totalPrice) - current.totalPrice.toNumber()
+              : 0,
+          paidAdjustment:
+            typeof dto.amountPaid === 'number'
+              ? Number(dto.amountPaid) - current.amountPaid.toNumber()
+              : 0,
+        });
+
+        return updated;
       });
     });
   }
 
   remove(actorId: string, id: string) {
-    // hard delete + touch en una sola consulta
     return handleRequest(async () => {
       return this.prisma.$transaction(async (tx: PrismaClient) => {
         const deleted = await tx.transfer.delete({
           where: { id },
-          select: { id: true, reservationId: true },
+          select: {
+            id: true,
+            reservationId: true,
+            totalPrice: true,
+            amountPaid: true,
+          },
         });
-        await touchReservation(tx, deleted.reservationId, actorId);
+
+        await touchReservation(tx, deleted.reservationId, actorId, {
+          totalAdjustment: -deleted.totalPrice.toNumber(),
+          paidAdjustment: -deleted.amountPaid.toNumber(),
+        });
+
         return { id: deleted.id };
       });
     });
