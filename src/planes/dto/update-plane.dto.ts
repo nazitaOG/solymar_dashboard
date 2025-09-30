@@ -1,8 +1,14 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreatePlaneDto } from './create-plane.dto';
 import { AtLeastOneField } from '../../common/validators/at-lest-one-field';
 
-export class UpdatePlaneDto extends PartialType(CreatePlaneDto) {
+class CreatePlaneDtoWithoutReservationId extends OmitType(CreatePlaneDto, [
+  'reservationId',
+] as const) {}
+
+export class UpdatePlaneDto extends PartialType(
+  CreatePlaneDtoWithoutReservationId,
+) {
   @AtLeastOneField([
     'departure',
     'arrival',
@@ -13,7 +19,6 @@ export class UpdatePlaneDto extends PartialType(CreatePlaneDto) {
     'totalPrice',
     'amountPaid',
     'notes',
-    'reservationId',
   ])
   private _atLeastOne!: true;
 }

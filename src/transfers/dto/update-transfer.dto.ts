@@ -1,8 +1,15 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateTransferDto } from './create-transfer.dto';
 import { AtLeastOneField } from '../../common/validators/at-lest-one-field';
 
-export class UpdateTransferDto extends PartialType(CreateTransferDto) {
+class CreateTransferDtoWithoutReservationId extends OmitType(
+  CreateTransferDto,
+  ['reservationId'] as const,
+) {}
+
+export class UpdateTransferDto extends PartialType(
+  CreateTransferDtoWithoutReservationId,
+) {
   @AtLeastOneField([
     'origin',
     'destination',
@@ -10,7 +17,6 @@ export class UpdateTransferDto extends PartialType(CreateTransferDto) {
     'arrivalDate',
     'provider',
     'bookingReference',
-    'reservationId',
     'transportType',
     'totalPrice',
     'amountPaid',

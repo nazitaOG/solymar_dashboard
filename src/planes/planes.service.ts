@@ -6,6 +6,8 @@ import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { CommonDatePolicies } from '../common/policies/date.policies';
 import { CommonOriginDestinationPolicies } from '../common/policies/origin-destination.policies';
 import { CommonPricePolicies } from '../common/policies/price.policies';
+import { PrismaClient } from '@prisma/client';
+import { touchReservation } from '../common/db/touch-audit-reservation';
 
 @Injectable()
 export class PlanesService {
@@ -13,7 +15,7 @@ export class PlanesService {
 
   // actorId = id del usuario autenticado
   create(actorId: string, dto: CreatePlaneDto) {
-    return handleRequest(() => {
+    return handleRequest(async () => {
       CommonOriginDestinationPolicies.assertCreateDifferent(
         dto,
         'departure',
@@ -38,31 +40,31 @@ export class PlanesService {
         },
       );
 
-      CommonPricePolicies.assertCreatePrice(
-        dto,
-        'totalPrice',
-        'amountPaid',
+      CommonPricePolicies.assertCreatePrice(dto, 'totalPrice', 'amountPaid', {
+        labels: { total: 'total', paid: 'pagado' },
+      });
 
-        { labels: { total: 'total', paid: 'pagado' } },
-      );
+      return this.prisma.$transaction(async (tx: PrismaClient) => {
+        const plane = await tx.plane.create({
+          data: {
+            departure: dto.departure,
+            arrival: dto.arrival ?? undefined,
+            departureDate: dto.departureDate,
+            arrivalDate: dto.arrivalDate ?? undefined,
+            bookingReference: dto.bookingReference,
+            provider: dto.provider ?? undefined,
+            totalPrice: dto.totalPrice,
+            amountPaid: dto.amountPaid,
+            notes: dto.notes ?? undefined,
+            reservationId: dto.reservationId,
+            createdBy: actorId,
+            updatedBy: actorId,
+          },
+          select: { id: true, reservationId: true },
+        });
 
-      return this.prisma.plane.create({
-        data: {
-          departure: dto.departure,
-          arrival: dto.arrival ?? undefined,
-          departureDate: dto.departureDate,
-          arrivalDate: dto.arrivalDate ?? undefined,
-          bookingReference: dto.bookingReference,
-          provider: dto.provider ?? undefined,
-          totalPrice: dto.totalPrice,
-          amountPaid: dto.amountPaid,
-          notes: dto.notes ?? undefined,
-          reservationId: dto.reservationId,
-
-          // sellos del nuevo esquema
-          createdBy: actorId,
-          updatedBy: actorId,
-        },
+        await touchReservation(tx, plane.reservationId, actorId);
+        return plane;
       });
     });
   }
@@ -85,6 +87,7 @@ export class PlanesService {
           arrival: true,
           totalPrice: true,
           amountPaid: true,
+          reservationId: true, // usamos esta, NO del dto
         },
       });
 
@@ -121,31 +124,44 @@ export class PlanesService {
         { labels: { total: 'total', paid: 'pagado' } },
       );
 
-      return this.prisma.plane.update({
-        where: { id },
-        data: {
-          departure: dto.departure ?? undefined,
-          arrival: dto.arrival ?? undefined,
-          departureDate: dto.departureDate ?? undefined,
-          arrivalDate: dto.arrivalDate ?? undefined,
-          bookingReference: dto.bookingReference ?? undefined,
-          provider: dto.provider ?? undefined,
-          totalPrice:
-            typeof dto.totalPrice === 'number' ? dto.totalPrice : undefined,
-          amountPaid:
-            typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
-          notes: dto.notes ?? undefined,
-          reservationId: dto.reservationId ?? undefined,
+      return this.prisma.$transaction(async (tx: PrismaClient) => {
+        const plane = await tx.plane.update({
+          where: { id },
+          data: {
+            departure: dto.departure ?? undefined,
+            arrival: dto.arrival ?? undefined,
+            departureDate: dto.departureDate ?? undefined,
+            arrivalDate: dto.arrivalDate ?? undefined,
+            bookingReference: dto.bookingReference ?? undefined,
+            provider: dto.provider ?? undefined,
+            totalPrice:
+              typeof dto.totalPrice === 'number' ? dto.totalPrice : undefined,
+            amountPaid:
+              typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
+            notes: dto.notes ?? undefined,
+            // NO permitir mover de reserva → no tocar reservationId
+            updatedBy: actorId,
+          },
+          select: { id: true }, // no necesitamos volver a pedir reservationId
+        });
 
-          // sello de último editor
-          updatedBy: actorId,
-        },
+        await touchReservation(tx, current.reservationId, actorId);
+        return plane;
       });
     });
   }
 
   remove(actorId: string, id: string) {
-    // si luego haces soft delete, acá guardarías deletedBy/At
-    return handleRequest(() => this.prisma.plane.delete({ where: { id } }));
+    // hard delete + touch en una sola consulta
+    return handleRequest(async () => {
+      return this.prisma.$transaction(async (tx: PrismaClient) => {
+        const deleted = await tx.plane.delete({
+          where: { id },
+          select: { id: true, reservationId: true },
+        });
+        await touchReservation(tx, deleted.reservationId, actorId);
+        return { id: deleted.id };
+      });
+    });
   }
 }

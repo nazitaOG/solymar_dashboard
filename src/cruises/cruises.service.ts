@@ -6,6 +6,8 @@ import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { CommonOriginDestinationPolicies } from '../common/policies/origin-destination.policies';
 import { CommonDatePolicies } from '../common/policies/date.policies';
 import { CommonPricePolicies } from '../common/policies/price.policies';
+import { touchReservation } from '../common/db/touch-audit-reservation';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class CruisesService {
@@ -49,22 +51,24 @@ export class CruisesService {
         { labels: { total: 'total', paid: 'pagado' } },
       );
 
-      return this.prisma.cruise.create({
-        data: {
-          startDate: createCruiseDto.startDate,
-          endDate: createCruiseDto.endDate ?? undefined,
-          bookingReference: createCruiseDto.bookingReference ?? undefined,
-          provider: createCruiseDto.provider,
-          embarkationPort: createCruiseDto.embarkationPort,
-          arrivalPort: createCruiseDto.arrivalPort ?? undefined,
-          totalPrice: createCruiseDto.totalPrice,
-          amountPaid: createCruiseDto.amountPaid,
-          reservationId: createCruiseDto.reservationId,
-
-          // 🔐 sellos requeridos por el nuevo schema
-          createdBy: actorId,
-          updatedBy: actorId,
-        },
+      return this.prisma.$transaction(async (tx: PrismaClient) => {
+        const cruise = await tx.cruise.create({
+          data: {
+            startDate: createCruiseDto.startDate,
+            endDate: createCruiseDto.endDate ?? undefined,
+            bookingReference: createCruiseDto.bookingReference ?? undefined,
+            provider: createCruiseDto.provider,
+            embarkationPort: createCruiseDto.embarkationPort,
+            arrivalPort: createCruiseDto.arrivalPort ?? undefined,
+            totalPrice: createCruiseDto.totalPrice,
+            amountPaid: createCruiseDto.amountPaid,
+            reservationId: createCruiseDto.reservationId,
+            createdBy: actorId,
+            updatedBy: actorId,
+          },
+        });
+        await touchReservation(tx, createCruiseDto.reservationId, actorId);
+        return cruise;
       });
     });
   }
@@ -86,6 +90,7 @@ export class CruisesService {
           arrivalPort: true,
           totalPrice: true,
           amountPaid: true,
+          reservationId: true,
         },
       });
 
@@ -123,36 +128,44 @@ export class CruisesService {
         { labels: { total: 'total', paid: 'pagado' } },
       );
 
-      return this.prisma.cruise.update({
-        where: { id },
-        data: {
-          startDate: updateCruiseDto.startDate ?? undefined,
-          endDate: updateCruiseDto.endDate ?? undefined,
-          bookingReference: updateCruiseDto.bookingReference ?? undefined,
-          provider: updateCruiseDto.provider ?? undefined,
-          embarkationPort: updateCruiseDto.embarkationPort ?? undefined,
-          arrivalPort: updateCruiseDto.arrivalPort ?? undefined,
-          totalPrice:
-            typeof updateCruiseDto.totalPrice === 'number'
-              ? updateCruiseDto.totalPrice
-              : undefined,
-          amountPaid:
-            typeof updateCruiseDto.amountPaid === 'number'
-              ? updateCruiseDto.amountPaid
-              : undefined,
-          reservationId: updateCruiseDto.reservationId ?? undefined,
-
-          // 🔐 sello requerido por el nuevo schema
-          updatedBy: actorId,
-        },
+      return this.prisma.$transaction(async (tx: PrismaClient) => {
+        const cruise = await tx.cruise.update({
+          where: { id },
+          data: {
+            startDate: updateCruiseDto.startDate ?? undefined,
+            endDate: updateCruiseDto.endDate ?? undefined,
+            bookingReference: updateCruiseDto.bookingReference ?? undefined,
+            provider: updateCruiseDto.provider ?? undefined,
+            embarkationPort: updateCruiseDto.embarkationPort ?? undefined,
+            arrivalPort: updateCruiseDto.arrivalPort ?? undefined,
+            totalPrice:
+              typeof updateCruiseDto.totalPrice === 'number'
+                ? updateCruiseDto.totalPrice
+                : undefined,
+            amountPaid:
+              typeof updateCruiseDto.amountPaid === 'number'
+                ? updateCruiseDto.amountPaid
+                : undefined,
+            // 🔐 sello requerido por el nuevo schema
+            updatedBy: actorId,
+          },
+        });
+        await touchReservation(tx, current.reservationId, actorId);
+        return cruise;
       });
     });
   }
 
   remove(actorId: string, id: string) {
-    // Si querés “soft delete” con auditoría, acá pondrías deletedBy/At.
     return handleRequest(async () => {
-      return this.prisma.cruise.delete({ where: { id } });
+      return this.prisma.$transaction(async (tx: PrismaClient) => {
+        const deleted = await tx.cruise.delete({
+          where: { id },
+          select: { id: true, reservationId: true },
+        });
+        await touchReservation(tx, deleted.reservationId, actorId);
+        return { id: deleted.id };
+      });
     });
   }
 }

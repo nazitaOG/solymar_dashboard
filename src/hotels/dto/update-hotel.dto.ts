@@ -1,9 +1,15 @@
 // src/hotels/dto/update-hotel.dto.ts
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateHotelDto } from './create-hotel.dto';
 import { AtLeastOneField } from '../../common/validators/at-lest-one-field';
 
-export class UpdateHotelDto extends PartialType(CreateHotelDto) {
+class CreateHotelDtoWithoutReservationId extends OmitType(CreateHotelDto, [
+  'reservationId',
+] as const) {}
+
+export class UpdateHotelDto extends PartialType(
+  CreateHotelDtoWithoutReservationId,
+) {
   @AtLeastOneField([
     'startDate',
     'endDate',
@@ -14,7 +20,6 @@ export class UpdateHotelDto extends PartialType(CreateHotelDto) {
     'amountPaid',
     'roomType',
     'provider',
-    'reservationId',
   ])
   private _atLeastOne!: true;
 }

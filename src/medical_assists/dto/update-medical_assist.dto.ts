@@ -1,9 +1,14 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateMedicalAssistDto } from './create-medical_assist.dto';
 import { AtLeastOneField } from '../../common/validators/at-lest-one-field';
 
-export class UpdateMedicalAssistDto extends PartialType(
+class CreateMedicalAssistDtoWithoutReservationId extends OmitType(
   CreateMedicalAssistDto,
+  ['reservationId'] as const,
+) {}
+
+export class UpdateMedicalAssistDto extends PartialType(
+  CreateMedicalAssistDtoWithoutReservationId,
 ) {
   @AtLeastOneField([
     'totalPrice',
@@ -11,7 +16,6 @@ export class UpdateMedicalAssistDto extends PartialType(
     'bookingReference',
     'assistType',
     'provider',
-    'reservationId',
   ])
   private _atLeastOne!: true;
 }

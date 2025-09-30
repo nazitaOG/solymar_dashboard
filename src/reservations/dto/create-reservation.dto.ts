@@ -1,24 +1,9 @@
-import {
-  IsUUID,
-  IsEnum,
-  IsInt,
-  Min,
-  Max,
-  ArrayMinSize,
-  IsArray,
-} from 'class-validator';
+import { IsUUID, IsEnum, ArrayMinSize, IsArray } from 'class-validator';
 import { ReservationState } from '../../common/enums/reservation-state.enum';
-import { Type } from 'class-transformer';
 
 export class CreateReservationDto {
   @IsUUID()
   userId: string;
-
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  @Max(Number.MAX_SAFE_INTEGER)
-  totalPrice: number;
 
   @IsEnum(ReservationState)
   state: ReservationState;

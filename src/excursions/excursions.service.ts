@@ -4,36 +4,39 @@ import { UpdateExcursionDto } from './dto/update-excursion.dto';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { CommonPricePolicies } from '../common/policies/price.policies';
+import { PrismaClient } from '@prisma/client';
+import { touchReservation } from '../common/db/touch-audit-reservation';
 
 @Injectable()
 export class ExcursionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   // actorId = id del usuario autenticado
-  create(actorId: string, createExcursionDto: CreateExcursionDto) {
+  create(actorId: string, dto: CreateExcursionDto) {
     return handleRequest(async () => {
-      CommonPricePolicies.assertCreatePrice(
-        createExcursionDto,
-        'totalPrice',
-        'amountPaid',
-        { labels: { total: 'total', paid: 'pagado' } },
-      );
+      CommonPricePolicies.assertCreatePrice(dto, 'totalPrice', 'amountPaid', {
+        labels: { total: 'total', paid: 'pagado' },
+      });
 
-      return this.prisma.excursion.create({
-        data: {
-          totalPrice: createExcursionDto.totalPrice,
-          amountPaid: createExcursionDto.amountPaid,
-          origin: createExcursionDto.origin,
-          provider: createExcursionDto.provider,
-          bookingReference: createExcursionDto.bookingReference ?? undefined,
-          excursionDate: createExcursionDto.excursionDate,
-          excursionName: createExcursionDto.excursionName,
-          reservationId: createExcursionDto.reservationId,
+      return this.prisma.$transaction(async (tx: PrismaClient) => {
+        const excursion = await tx.excursion.create({
+          data: {
+            totalPrice: dto.totalPrice,
+            amountPaid: dto.amountPaid,
+            origin: dto.origin,
+            provider: dto.provider,
+            bookingReference: dto.bookingReference ?? undefined,
+            excursionDate: dto.excursionDate,
+            excursionName: dto.excursionName,
+            reservationId: dto.reservationId,
+            createdBy: actorId,
+            updatedBy: actorId,
+          },
+          select: { id: true, reservationId: true },
+        });
 
-          // sellos requeridos por el nuevo schema
-          createdBy: actorId,
-          updatedBy: actorId,
-        },
+        await touchReservation(tx, excursion.reservationId, actorId);
+        return excursion;
       });
     });
   }
@@ -45,48 +48,58 @@ export class ExcursionsService {
   }
 
   // actorId = id del usuario autenticado
-  update(actorId: string, id: string, updateExcursionDto: UpdateExcursionDto) {
+  update(actorId: string, id: string, dto: UpdateExcursionDto) {
     return handleRequest(async () => {
+      // Traemos valores actuales solo para validar precios (y tomar reservationId)
       const current = await this.prisma.excursion.findUniqueOrThrow({
         where: { id },
-        select: { totalPrice: true, amountPaid: true },
+        select: { totalPrice: true, amountPaid: true, reservationId: true },
       });
 
       CommonPricePolicies.assertUpdatePrice(
-        updateExcursionDto,
+        dto,
         { total: current.totalPrice, paid: current.amountPaid },
         'totalPrice',
         'amountPaid',
         { labels: { total: 'total', paid: 'pagado' } },
       );
 
-      return this.prisma.excursion.update({
-        where: { id },
-        data: {
-          totalPrice:
-            typeof updateExcursionDto.totalPrice === 'number'
-              ? updateExcursionDto.totalPrice
-              : undefined,
-          amountPaid:
-            typeof updateExcursionDto.amountPaid === 'number'
-              ? updateExcursionDto.amountPaid
-              : undefined,
-          origin: updateExcursionDto.origin ?? undefined,
-          provider: updateExcursionDto.provider ?? undefined,
-          bookingReference: updateExcursionDto.bookingReference ?? undefined,
-          excursionDate: updateExcursionDto.excursionDate ?? undefined,
-          excursionName: updateExcursionDto.excursionName ?? undefined,
-          reservationId: updateExcursionDto.reservationId ?? undefined,
+      return this.prisma.$transaction(async (tx: PrismaClient) => {
+        const excursion = await tx.excursion.update({
+          where: { id },
+          data: {
+            totalPrice:
+              typeof dto.totalPrice === 'number' ? dto.totalPrice : undefined,
+            amountPaid:
+              typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
+            origin: dto.origin ?? undefined,
+            provider: dto.provider ?? undefined,
+            bookingReference: dto.bookingReference ?? undefined,
+            excursionDate: dto.excursionDate ?? undefined,
+            excursionName: dto.excursionName ?? undefined,
+            // NO permitir mover de reserva → no tocar reservationId
+            updatedBy: actorId,
+          },
+          select: { id: true }, // no necesitamos repetir reservationId
+        });
 
-          // sello de último editor
-          updatedBy: actorId,
-        },
+        await touchReservation(tx, current.reservationId, actorId);
+        return excursion;
       });
     });
   }
 
   remove(actorId: string, id: string) {
-    // Si más adelante hacés soft delete, acá iría deletedBy/At.
-    return handleRequest(() => this.prisma.excursion.delete({ where: { id } }));
+    // hard delete + touch en una sola consulta
+    return handleRequest(async () => {
+      return this.prisma.$transaction(async (tx: PrismaClient) => {
+        const deleted = await tx.excursion.delete({
+          where: { id },
+          select: { id: true, reservationId: true },
+        });
+        await touchReservation(tx, deleted.reservationId, actorId);
+        return { id: deleted.id };
+      });
+    });
   }
 }

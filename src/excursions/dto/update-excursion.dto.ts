@@ -1,8 +1,15 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateExcursionDto } from './create-excursion.dto';
 import { AtLeastOneField } from '../../common/validators/at-lest-one-field';
 
-export class UpdateExcursionDto extends PartialType(CreateExcursionDto) {
+class CreateExcursionDtoWithoutReservationId extends OmitType(
+  CreateExcursionDto,
+  ['reservationId'] as const,
+) {}
+
+export class UpdateExcursionDto extends PartialType(
+  CreateExcursionDtoWithoutReservationId,
+) {
   @AtLeastOneField([
     'totalPrice',
     'amountPaid',
@@ -11,7 +18,6 @@ export class UpdateExcursionDto extends PartialType(CreateExcursionDto) {
     'provider',
     'bookingReference',
     'excursionDate',
-    'reservationId',
   ])
   private _atLeastOne!: true;
 }

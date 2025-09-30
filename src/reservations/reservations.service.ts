@@ -30,7 +30,7 @@ export class ReservationsService {
         const res = await tx.reservation.create({
           data: {
             userId: dto.userId,
-            totalPrice: dto.totalPrice,
+            totalPrice: 0,
             state: dto.state,
             createdBy: actorId,
             updatedBy: actorId,
@@ -86,9 +86,6 @@ export class ReservationsService {
       this.prisma.reservation.update({
         where: { id },
         data: {
-          ...(typeof dto.totalPrice === 'number' && {
-            totalPrice: dto.totalPrice,
-          }),
           ...(dto.state && { state: dto.state }),
           updatedBy: actorId,
         },
