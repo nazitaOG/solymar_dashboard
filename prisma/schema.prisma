@@ -83,7 +83,8 @@ model RoleUser {
 model Reservation {
   id         String           @id @default(uuid()) @db.Uuid
   userId     String           @db.Uuid
-  totalPrice Decimal          @db.Decimal(18, 2)
+  totalPrice Decimal  @default(0) @db.Decimal(18, 2)
+  amountPaid Decimal  @default(0) @db.Decimal(18, 2) 
   state      ReservationState @default(PENDING)
 
   // audit

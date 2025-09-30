@@ -31,6 +31,7 @@ export class ReservationsService {
           data: {
             userId: dto.userId,
             totalPrice: 0,
+            amountPaid: 0,
             state: dto.state,
             createdBy: actorId,
             updatedBy: actorId,
