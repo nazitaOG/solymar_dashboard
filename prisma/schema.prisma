@@ -22,6 +22,12 @@ enum TransportType {
   OTHER
 }
 
+enum Currency {
+  USD
+  ARS
+  // posibilidad de extender
+}
+
 /**
  * =========================
  * USUARIOS / ROLES (M2M)
@@ -81,11 +87,9 @@ model RoleUser {
  */
 
 model Reservation {
-  id         String           @id @default(uuid()) @db.Uuid
-  userId     String           @db.Uuid
-  totalPrice Decimal  @default(0) @db.Decimal(18, 2)
-  amountPaid Decimal  @default(0) @db.Decimal(18, 2) 
-  state      ReservationState @default(PENDING)
+  id     String           @id @default(uuid()) @db.Uuid
+  userId String           @db.Uuid
+  state  ReservationState @default(PENDING)
 
   // audit
   createdAt DateTime @default(now())
@@ -101,6 +105,8 @@ model Reservation {
   excursions      Excursion[]
   medicalAssists  MedicalAssist[]
   paxReservations PaxReservation[]
+
+  currencyTotals  ReservationCurrencyTotal[]
 }
 
 model Hotel {
@@ -116,6 +122,8 @@ model Hotel {
   provider         String   @db.VarChar(128)
   reservationId    String   @db.Uuid
 
+  currency         Currency
+
   // audit
   createdAt DateTime @default(now())
   updatetAt DateTime @updatedAt
@@ -125,6 +133,7 @@ model Hotel {
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
+  @@index([currency])
 }
 
 model Plane {
@@ -140,6 +149,8 @@ model Plane {
   notes            String?   @db.Text
   reservationId    String    @db.Uuid
 
+  currency         Currency
+
   // audit
   createdAt DateTime @default(now())
   updatetAt DateTime @updatedAt
@@ -149,6 +160,7 @@ model Plane {
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
+  @@index([currency])
 }
 
 model Cruise {
@@ -163,6 +175,8 @@ model Cruise {
   amountPaid       Decimal   @db.Decimal(18, 2)
   reservationId    String    @db.Uuid
 
+  currency         Currency
+
   // audit
   createdAt DateTime @default(now())
   updatetAt DateTime @updatedAt
@@ -172,6 +186,7 @@ model Cruise {
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
+  @@index([currency])
 }
 
 model Transfer {
@@ -187,6 +202,8 @@ model Transfer {
   amountPaid       Decimal       @db.Decimal(18, 2)
   transportType    TransportType @default(PICKUP)
 
+  currency         Currency
+
   // audit
   createdAt DateTime @default(now())
   updatetAt DateTime @updatedAt
@@ -196,6 +213,7 @@ model Transfer {
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
+  @@index([currency])
 }
 
 model Excursion {
@@ -209,6 +227,8 @@ model Excursion {
   excursionName    String   @db.VarChar(255)
   reservationId    String   @db.Uuid
 
+  currency         Currency
+
   // audit
   createdAt DateTime @default(now())
   updatetAt DateTime @updatedAt
@@ -218,6 +238,7 @@ model Excursion {
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
+  @@index([currency])
 }
 
 model MedicalAssist {
@@ -229,6 +250,8 @@ model MedicalAssist {
   provider         String  @db.VarChar(128)
   reservationId    String  @db.Uuid
 
+  currency         Currency
+
   // audit
   createdAt DateTime @default(now())
   updatetAt DateTime @updatedAt
@@ -238,6 +261,7 @@ model MedicalAssist {
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   @@index([reservationId])
+  @@index([currency])
 }
 
 /**
@@ -317,4 +341,28 @@ model PaxReservation {
   @@unique([paxId, reservationId])
   @@index([reservationId])
   @@index([paxId])
+}
+
+/**
+ * =========================
+ * TOTALES POR MONEDA
+ * =========================
+ */
+
+model ReservationCurrencyTotal {
+  id            String   @id @default(uuid()) @db.Uuid
+  reservationId String   @db.Uuid
+  currency      Currency
+
+  totalPrice    Decimal  @default(0) @db.Decimal(18, 2)
+  amountPaid    Decimal  @default(0) @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+  updatetAt DateTime @updatedAt
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@unique([reservationId, currency])
+  @@index([reservationId])
+  @@index([currency])
 }

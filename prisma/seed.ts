@@ -5,6 +5,7 @@ import {
   Prisma,
   ReservationState,
   TransportType,
+  Currency,
 } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { hashPassword } from '../src/common/security/hash_password';
@@ -12,7 +13,7 @@ import { hashPassword } from '../src/common/security/hash_password';
 const pepper = process.env.PEPPER;
 const prisma = new PrismaClient();
 
-async function main() {
+async function main(): Promise<void> {
   // 1) BORRADO LIMPIO
   await prisma.$executeRaw`SET session_replication_role = replica;`;
   try {
@@ -24,6 +25,7 @@ async function main() {
       prisma.transfer.deleteMany({}),
       prisma.excursion.deleteMany({}),
       prisma.medicalAssist.deleteMany({}),
+      prisma.reservationCurrencyTotal.deleteMany({}),
       prisma.paxReservation.deleteMany({}),
       prisma.passport.deleteMany({}),
       prisma.dni.deleteMany({}),
@@ -49,7 +51,7 @@ async function main() {
       updatedBy: SYSTEM_ID,
     },
   });
-  console.log('System user created:', systemUser);
+  console.log('System user created:', systemUser.username);
 
   // 3) ROLES
   const [adminRole, userRole, superAdminRole] = await Promise.all([
@@ -61,11 +63,7 @@ async function main() {
       },
     }),
     prisma.role.create({
-      data: {
-        description: 'user',
-        createdBy: SYSTEM_ID,
-        updatedBy: SYSTEM_ID,
-      },
+      data: { description: 'user', createdBy: SYSTEM_ID, updatedBy: SYSTEM_ID },
     }),
     prisma.role.create({
       data: {
@@ -113,7 +111,6 @@ async function main() {
   // 5) ROLE-USER (M2M)
   await prisma.roleUser.createMany({
     data: [
-      // admin tiene admin y user
       {
         roleId: adminRole.id,
         userId: admin.id,
@@ -126,14 +123,12 @@ async function main() {
         createdBy: SYSTEM_ID,
         updatedBy: SYSTEM_ID,
       },
-      // user tiene user
       {
         roleId: userRole.id,
         userId: user.id,
         createdBy: SYSTEM_ID,
         updatedBy: SYSTEM_ID,
       },
-      // superAdmin tiene admin, user y super_admin
       {
         roleId: superAdminRole.id,
         userId: superAdmin.id,
@@ -156,19 +151,17 @@ async function main() {
     skipDuplicates: true,
   });
 
-  // 6) RESERVA
+  // 6) RESERVA (sin totales agregados en Reservation)
   const reservation = await prisma.reservation.create({
     data: {
       userId: user.id,
-      totalPrice: new Prisma.Decimal('120000.00'), // denormalizado (luego lo automatizamos)
       state: ReservationState.CONFIRMED,
       createdBy: SYSTEM_ID,
       updatedBy: SYSTEM_ID,
     },
   });
 
-  // 7) ITEMS DE RESERVA
-  // Hotel
+  // 7) ITEMS (cada uno con `currency`)
   await prisma.hotel.create({
     data: {
       reservationId: reservation.id,
@@ -181,12 +174,12 @@ async function main() {
       amountPaid: new Prisma.Decimal('40000.00'),
       roomType: 'Doble',
       provider: 'Booking.com',
+      currency: Currency.ARS,
       createdBy: SYSTEM_ID,
       updatedBy: SYSTEM_ID,
     },
   });
 
-  // Plane
   await prisma.plane.create({
     data: {
       reservationId: reservation.id,
@@ -199,12 +192,12 @@ async function main() {
       bookingReference: 'PLN-456',
       provider: 'Aerolíneas Argentinas',
       notes: 'Asiento 12A, equipaje incluido.',
+      currency: Currency.USD,
       createdBy: SYSTEM_ID,
       updatedBy: SYSTEM_ID,
     },
   });
 
-  // Cruise
   await prisma.cruise.create({
     data: {
       reservationId: reservation.id,
@@ -216,12 +209,12 @@ async function main() {
       provider: 'Royal Caribbean',
       totalPrice: new Prisma.Decimal('20000.00'),
       amountPaid: new Prisma.Decimal('10000.00'),
+      currency: Currency.USD,
       createdBy: SYSTEM_ID,
       updatedBy: SYSTEM_ID,
     },
   });
 
-  // Transfer (arrivalDate es DateTime en tu schema)
   await prisma.transfer.create({
     data: {
       reservationId: reservation.id,
@@ -233,12 +226,12 @@ async function main() {
       totalPrice: new Prisma.Decimal('5000.00'),
       amountPaid: new Prisma.Decimal('5000.00'),
       transportType: TransportType.PICKUP,
+      currency: Currency.ARS,
       createdBy: SYSTEM_ID,
       updatedBy: SYSTEM_ID,
     },
   });
 
-  // Transfer extra (BUS)
   await prisma.transfer.create({
     data: {
       reservationId: reservation.id,
@@ -250,12 +243,12 @@ async function main() {
       totalPrice: new Prisma.Decimal('3000.00'),
       amountPaid: new Prisma.Decimal('3000.00'),
       transportType: TransportType.BUS,
+      currency: Currency.ARS,
       createdBy: SYSTEM_ID,
       updatedBy: SYSTEM_ID,
     },
   });
 
-  // Excursion
   await prisma.excursion.create({
     data: {
       reservationId: reservation.id,
@@ -265,12 +258,12 @@ async function main() {
       excursionDate: new Date('2025-11-05T14:00:00Z'),
       totalPrice: new Prisma.Decimal('7000.00'),
       amountPaid: new Prisma.Decimal('0.00'),
+      currency: Currency.ARS,
       createdBy: SYSTEM_ID,
       updatedBy: SYSTEM_ID,
     },
   });
 
-  // Medical Assist
   await prisma.medicalAssist.create({
     data: {
       reservationId: reservation.id,
@@ -279,6 +272,7 @@ async function main() {
       provider: 'AssistCard',
       totalPrice: new Prisma.Decimal('8000.00'),
       amountPaid: new Prisma.Decimal('8000.00'),
+      currency: Currency.ARS,
       createdBy: SYSTEM_ID,
       updatedBy: SYSTEM_ID,
     },
@@ -348,7 +342,103 @@ async function main() {
     skipDuplicates: true,
   });
 
-  console.log('✅ Seed completado (reset + carga de datos de ejemplo).');
+  // 10) TOTALES POR MONEDA (inline, sin función)
+  {
+    const toNumber = (d: Prisma.Decimal | null): number => Number(d ?? 0);
+
+    const [gHotels, gPlanes, gCruises, gTransfers, gExcursions, gMedicals] =
+      await Promise.all([
+        prisma.hotel.groupBy({
+          by: ['currency'],
+          where: { reservationId: reservation.id },
+          _sum: { totalPrice: true, amountPaid: true },
+        }),
+        prisma.plane.groupBy({
+          by: ['currency'],
+          where: { reservationId: reservation.id },
+          _sum: { totalPrice: true, amountPaid: true },
+        }),
+        prisma.cruise.groupBy({
+          by: ['currency'],
+          where: { reservationId: reservation.id },
+          _sum: { totalPrice: true, amountPaid: true },
+        }),
+        prisma.transfer.groupBy({
+          by: ['currency'],
+          where: { reservationId: reservation.id },
+          _sum: { totalPrice: true, amountPaid: true },
+        }),
+        prisma.excursion.groupBy({
+          by: ['currency'],
+          where: { reservationId: reservation.id },
+          _sum: { totalPrice: true, amountPaid: true },
+        }),
+        prisma.medicalAssist.groupBy({
+          by: ['currency'],
+          where: { reservationId: reservation.id },
+          _sum: { totalPrice: true, amountPaid: true },
+        }),
+      ]);
+
+    const buckets = new Map<
+      Currency,
+      { totalPrice: number; amountPaid: number }
+    >();
+
+    const fold = (
+      rows: Array<{
+        currency: Currency;
+        _sum: {
+          totalPrice: Prisma.Decimal | null;
+          amountPaid: Prisma.Decimal | null;
+        };
+      }>,
+    ): void => {
+      for (const r of rows) {
+        const prev = buckets.get(r.currency) ?? {
+          totalPrice: 0,
+          amountPaid: 0,
+        };
+        prev.totalPrice += toNumber(r._sum.totalPrice);
+        prev.amountPaid += toNumber(r._sum.amountPaid);
+        buckets.set(r.currency, prev);
+      }
+    };
+
+    fold(gHotels);
+    fold(gPlanes);
+    fold(gCruises);
+    fold(gTransfers);
+    fold(gExcursions);
+    fold(gMedicals);
+
+    const writes = [
+      ...Array.from(buckets.entries()).map(([currency, sums]) =>
+        prisma.reservationCurrencyTotal.upsert({
+          where: {
+            reservationId_currency: { reservationId: reservation.id, currency },
+          },
+          update: { totalPrice: sums.totalPrice, amountPaid: sums.amountPaid },
+          create: {
+            reservationId: reservation.id,
+            currency,
+            totalPrice: sums.totalPrice,
+            amountPaid: sums.amountPaid,
+          },
+        }),
+      ),
+      prisma.reservationCurrencyTotal.deleteMany({
+        where: {
+          reservationId: reservation.id,
+          currency: { notIn: Array.from(buckets.keys()) },
+        },
+      }),
+    ];
+
+    await prisma.$transaction(writes);
+  }
+
+  console.log('✅ Seed completado (reset + datos + totales por moneda).');
 }
 
 main()

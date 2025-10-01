@@ -8,10 +8,12 @@ import {
   Min,
   MaxLength,
   IsNotEmpty,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ToDateDay } from '../../common/decorators/date.decorators';
 import { ToTrim } from '../../common/decorators/string.decorators';
+import { Currency } from '@prisma/client';
 
 export class CreateCruiseDto {
   @Type(() => Date)
@@ -62,6 +64,9 @@ export class CreateCruiseDto {
   @Min(0)
   @Max(Number.MAX_SAFE_INTEGER)
   amountPaid: number;
+
+  @IsEnum(Currency)
+  currency: Currency; 
 
   @ToTrim()
   @IsUUID()
