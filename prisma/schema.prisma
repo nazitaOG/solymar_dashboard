@@ -42,8 +42,8 @@ model User {
   isActive       Boolean @default(true)
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -56,8 +56,8 @@ model Role {
   description String @unique
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -69,8 +69,8 @@ model RoleUser {
   userId String @db.Uuid
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -92,8 +92,8 @@ model Reservation {
   state  ReservationState @default(PENDING)
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -125,8 +125,8 @@ model Hotel {
   currency         Currency
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -152,8 +152,8 @@ model Plane {
   currency         Currency
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -178,8 +178,8 @@ model Cruise {
   currency         Currency
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -205,8 +205,8 @@ model Transfer {
   currency         Currency
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -230,8 +230,8 @@ model Excursion {
   currency         Currency
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -253,8 +253,8 @@ model MedicalAssist {
   currency         Currency
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -277,8 +277,8 @@ model Pax {
   nationality String
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -294,8 +294,8 @@ model Passport {
   expirationDate DateTime
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -309,8 +309,8 @@ model Dni {
   expirationDate DateTime
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -330,8 +330,8 @@ model PaxReservation {
   reservationId String @db.Uuid
 
   // audit
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -357,8 +357,8 @@ model ReservationCurrencyTotal {
   totalPrice    Decimal  @default(0) @db.Decimal(18, 2)
   amountPaid    Decimal  @default(0) @db.Decimal(18, 2)
 
-  createdAt DateTime @default(now())
-  updatetAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatetAt DateTime @updatedAt @db.Timestamptz(6)
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
