@@ -1,5 +1,3 @@
--- Asegurate de que no queden filas inválidas antes (ver sección "Verificar datos")
-
 ALTER TABLE "Hotel"
   ADD CONSTRAINT "hotel_amount_nonnegative_ck" CHECK ("totalPrice" >= 0 AND "amountPaid" >= 0),
   ADD CONSTRAINT "hotel_amount_paid_lte_total_ck" CHECK ("amountPaid" <= "totalPrice");
@@ -24,7 +22,6 @@ ALTER TABLE "MedicalAssist"
   ADD CONSTRAINT "medicalassist_amount_nonnegative_ck" CHECK ("totalPrice" >= 0 AND "amountPaid" >= 0),
   ADD CONSTRAINT "medicalassist_amount_paid_lte_total_ck" CHECK ("amountPaid" <= "totalPrice");
 
--- Totales por moneda
 ALTER TABLE "ReservationCurrencyTotal"
   ADD CONSTRAINT "rct_amount_nonnegative_ck" CHECK ("totalPrice" >= 0 AND "amountPaid" >= 0),
   ADD CONSTRAINT "rct_amount_paid_lte_total_ck" CHECK ("amountPaid" <= "totalPrice");
