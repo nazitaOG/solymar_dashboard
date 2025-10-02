@@ -48,7 +48,7 @@ docker compose up -d db
 pnpm prisma migrate dev
 pnpm prisma generate
 
-### 1) Correr en locakl
+### 1) Correr en local
 pnpm start:dev
 
 
