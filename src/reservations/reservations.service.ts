@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { CreateReservationDto } from './dto/create-reservation.dto';
@@ -146,36 +150,39 @@ export class ReservationsService {
     return handleRequest(
       () =>
         this.prisma.$transaction(async (tx) => {
-          // Base de datos a actualizar siempre
           const data: Parameters<typeof tx.reservation.update>[0]['data'] = {
             ...(dto.state && { state: dto.state }),
             updatedBy: actorId,
           };
 
-          // --- Sincronizar PAX si viene paxIds en el DTO ---
           let added = 0;
           let removed = 0;
 
           if (Array.isArray(dto.paxIds)) {
-            // Normalizamos lista (únicos)
-            const incomingIds = Array.from(new Set(dto.paxIds));
-
-            // Validar existencia de PAX entrantes
-            if (incomingIds.length > 0) {
-              const found = await tx.pax.findMany({
-                where: { id: { in: incomingIds } },
-                select: { id: true },
-              });
-              const foundSet = new Set(found.map((p) => p.id));
-              const missing = incomingIds.filter((pid) => !foundSet.has(pid));
-              if (missing.length) {
-                throw new NotFoundException(
-                  `Some pax were not found: ${missing.join(', ')}`,
-                );
-              }
+            // Rechazar array vacío
+            if (dto.paxIds.length === 0) {
+              throw new BadRequestException(
+                'paxIds no puede ser un array vacío: la reserva debe mantener al menos un pasajero.',
+              );
             }
 
-            // Traer actuales vinculados a la reserva
+            // Normalizar (únicos)
+            const incomingIds = Array.from(new Set(dto.paxIds));
+
+            // Validar existencia
+            const found = await tx.pax.findMany({
+              where: { id: { in: incomingIds } },
+              select: { id: true },
+            });
+            const foundSet = new Set(found.map((p) => p.id));
+            const missing = incomingIds.filter((pid) => !foundSet.has(pid));
+            if (missing.length) {
+              throw new NotFoundException(
+                `Some pax were not found: ${missing.join(', ')}`,
+              );
+            }
+
+            // Traer actuales
             const current = await tx.paxReservation.findMany({
               where: { reservationId: id },
               select: { paxId: true },
@@ -204,16 +211,12 @@ export class ReservationsService {
 
             if (toRemove.length > 0) {
               await tx.paxReservation.deleteMany({
-                where: {
-                  reservationId: id,
-                  paxId: { in: toRemove },
-                },
+                where: { reservationId: id, paxId: { in: toRemove } },
               });
               removed = toRemove.length;
             }
           }
 
-          // Actualizar la reserva (estado / updatedBy) y devolver con include
           const updated = await tx.reservation.update({
             where: { id },
             data,
@@ -224,7 +227,6 @@ export class ReservationsService {
             },
           });
 
-          // Adjuntamos un pequeño “meta” opcional con el delta (puede ayudar al front/logs)
           return Object.assign(updated, {
             _paxSync: Array.isArray(dto.paxIds)
               ? { added, removed, total: updated.paxReservations.length }
