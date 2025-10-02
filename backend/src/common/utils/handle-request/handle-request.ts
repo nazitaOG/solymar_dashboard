@@ -4,7 +4,7 @@ import {
   NestStructuredLogger,
   StructuredLogger,
   type LogContext,
-} from '../../../common/logging/structured-logger';
+} from '../../logging/structured-logger';
 
 type ErrorHandler = (error: unknown) => Promise<never> | never;
 
