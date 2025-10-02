@@ -145,17 +145,91 @@ export class ReservationsService {
   update(actorId: string, id: string, dto: UpdateReservationDto) {
     return handleRequest(
       () =>
-        this.prisma.reservation.update({
-          where: { id },
-          data: {
+        this.prisma.$transaction(async (tx) => {
+          // Base de datos a actualizar siempre
+          const data: Parameters<typeof tx.reservation.update>[0]['data'] = {
             ...(dto.state && { state: dto.state }),
             updatedBy: actorId,
-          },
-          include: {
-            paxReservations: {
-              include: { pax: { include: { passport: true, dni: true } } },
+          };
+
+          // --- Sincronizar PAX si viene paxIds en el DTO ---
+          let added = 0;
+          let removed = 0;
+
+          if (Array.isArray(dto.paxIds)) {
+            // Normalizamos lista (únicos)
+            const incomingIds = Array.from(new Set(dto.paxIds));
+
+            // Validar existencia de PAX entrantes
+            if (incomingIds.length > 0) {
+              const found = await tx.pax.findMany({
+                where: { id: { in: incomingIds } },
+                select: { id: true },
+              });
+              const foundSet = new Set(found.map((p) => p.id));
+              const missing = incomingIds.filter((pid) => !foundSet.has(pid));
+              if (missing.length) {
+                throw new NotFoundException(
+                  `Some pax were not found: ${missing.join(', ')}`,
+                );
+              }
+            }
+
+            // Traer actuales vinculados a la reserva
+            const current = await tx.paxReservation.findMany({
+              where: { reservationId: id },
+              select: { paxId: true },
+            });
+            const currentSet = new Set(current.map((r) => r.paxId));
+
+            // Diff
+            const toAdd = incomingIds.filter((pid) => !currentSet.has(pid));
+            const toRemove = [...currentSet].filter(
+              (pid) => !incomingIds.includes(pid),
+            );
+
+            // Aplicar cambios
+            if (toAdd.length > 0) {
+              await tx.paxReservation.createMany({
+                data: toAdd.map((paxId) => ({
+                  paxId,
+                  reservationId: id,
+                  createdBy: actorId,
+                  updatedBy: actorId,
+                })),
+                skipDuplicates: true,
+              });
+              added = toAdd.length;
+            }
+
+            if (toRemove.length > 0) {
+              await tx.paxReservation.deleteMany({
+                where: {
+                  reservationId: id,
+                  paxId: { in: toRemove },
+                },
+              });
+              removed = toRemove.length;
+            }
+          }
+
+          // Actualizar la reserva (estado / updatedBy) y devolver con include
+          const updated = await tx.reservation.update({
+            where: { id },
+            data,
+            include: {
+              paxReservations: {
+                include: { pax: { include: { passport: true, dni: true } } },
+              },
             },
-          },
+          });
+
+          // Adjuntamos un pequeño “meta” opcional con el delta (puede ayudar al front/logs)
+          return Object.assign(updated, {
+            _paxSync: Array.isArray(dto.paxIds)
+              ? { added, removed, total: updated.paxReservations.length }
+              : undefined,
+          });
         }),
       this.logger,
       {
@@ -164,6 +238,10 @@ export class ReservationsService {
         extras: {
           id,
           stateNew: dto.state ?? undefined,
+          paxSyncRequested: Array.isArray(dto.paxIds),
+          paxNewCount: Array.isArray(dto.paxIds)
+            ? new Set(dto.paxIds).size
+            : undefined,
         },
       },
     );
