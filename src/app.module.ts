@@ -42,6 +42,8 @@ import { AuthModule } from './auth/auth.module';
         JWT_EXPIRES_IN: Joi.string()
           .pattern(/^\d+(s|m|h|d)$/)
           .default('15m'),
+        CORS_ENABLED: Joi.boolean().truthy('true').falsy('false').default(true),
+        CORS_ORIGINS: Joi.string().default('*'),
       }),
       validationOptions: {
         allowUnknown: true, // no rompe por variables extra del entorno
