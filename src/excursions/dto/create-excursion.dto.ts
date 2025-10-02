@@ -8,9 +8,11 @@ import {
   Min,
   MaxLength,
   IsNotEmpty,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ToDateMinute } from '../../common/decorators/date.decorators';
+import { Currency } from '@prisma/client';
 import { ToTrim } from '../../common/decorators/string.decorators';
 
 export class CreateExcursionDto {
@@ -25,6 +27,9 @@ export class CreateExcursionDto {
   @Min(0)
   @Max(Number.MAX_SAFE_INTEGER)
   amountPaid: number;
+
+  @IsEnum(Currency)
+  currency: Currency;
 
   @ToTrim()
   @IsString()
