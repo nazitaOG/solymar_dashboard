@@ -26,6 +26,7 @@ export class MedicalAssistsService {
             provider: dto.provider,
             totalPrice: dto.totalPrice,
             amountPaid: dto.amountPaid,
+            currency: dto.currency,
             createdBy: actorId,
             updatedBy: actorId,
           },
@@ -34,10 +35,12 @@ export class MedicalAssistsService {
             reservationId: true,
             totalPrice: true,
             amountPaid: true,
+            currency: true,
           },
         });
 
         await touchReservation(tx, created.reservationId, actorId, {
+          currency: created.currency,
           totalAdjustment: Number(created.totalPrice),
           paidAdjustment: Number(created.amountPaid),
         });
@@ -57,7 +60,12 @@ export class MedicalAssistsService {
     return handleRequest(async () => {
       const current = await this.prisma.medicalAssist.findUniqueOrThrow({
         where: { id },
-        select: { reservationId: true, totalPrice: true, amountPaid: true },
+        select: {
+          reservationId: true,
+          totalPrice: true,
+          amountPaid: true,
+          currency: true,
+        },
       });
 
       CommonPricePolicies.assertUpdatePrice(
@@ -85,6 +93,7 @@ export class MedicalAssistsService {
         });
 
         await touchReservation(tx, current.reservationId, actorId, {
+          currency: current.currency,
           totalAdjustment:
             typeof dto.totalPrice === 'number'
               ? Number(dto.totalPrice) - current.totalPrice.toNumber()
@@ -110,10 +119,12 @@ export class MedicalAssistsService {
             reservationId: true,
             totalPrice: true,
             amountPaid: true,
+            currency: true,
           },
         });
 
         await touchReservation(tx, deleted.reservationId, actorId, {
+          currency: deleted.currency,
           totalAdjustment: -deleted.totalPrice.toNumber(),
           paidAdjustment: -deleted.amountPaid.toNumber(),
         });

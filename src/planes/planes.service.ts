@@ -55,6 +55,7 @@ export class PlanesService {
             provider: dto.provider ?? undefined,
             totalPrice: dto.totalPrice,
             amountPaid: dto.amountPaid,
+            currency: dto.currency,
             notes: dto.notes ?? undefined,
             reservationId: dto.reservationId,
             createdBy: actorId,
@@ -65,10 +66,12 @@ export class PlanesService {
             reservationId: true,
             totalPrice: true,
             amountPaid: true,
+            currency: true,
           },
         });
 
         await touchReservation(tx, created.reservationId, actorId, {
+          currency: created.currency,
           totalAdjustment: Number(created.totalPrice),
           paidAdjustment: Number(created.amountPaid),
         });
@@ -97,6 +100,7 @@ export class PlanesService {
           totalPrice: true,
           amountPaid: true,
           reservationId: true,
+          currency: true,
         },
       });
 
@@ -151,10 +155,13 @@ export class PlanesService {
             // NO permitir mover de reserva
             updatedBy: actorId,
           },
-          select: { id: true },
+          select: {
+            id: true,
+          },
         });
 
         await touchReservation(tx, current.reservationId, actorId, {
+          currency: current.currency,
           totalAdjustment:
             typeof dto.totalPrice === 'number'
               ? Number(dto.totalPrice) - current.totalPrice.toNumber()
@@ -180,10 +187,12 @@ export class PlanesService {
             reservationId: true,
             totalPrice: true,
             amountPaid: true,
+            currency: true,
           },
         });
 
         await touchReservation(tx, deleted.reservationId, actorId, {
+          currency: deleted.currency,
           totalAdjustment: -deleted.totalPrice.toNumber(),
           paidAdjustment: -deleted.amountPaid.toNumber(),
         });

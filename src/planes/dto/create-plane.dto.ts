@@ -8,10 +8,12 @@ import {
   IsOptional,
   IsNotEmpty,
   MaxLength,
+  IsEnum,
 } from 'class-validator';
 import { ToDateMinute } from '../../common/decorators/date.decorators';
 import { Type } from 'class-transformer';
 import { ToTrim, ToUpperTrim } from '../../common/decorators/string.decorators';
+import { Currency } from '@prisma/client';
 
 export class CreatePlaneDto {
   @ToUpperTrim()
@@ -60,6 +62,9 @@ export class CreatePlaneDto {
   @Min(0)
   @Max(Number.MAX_SAFE_INTEGER)
   amountPaid: number;
+
+  @IsEnum(Currency)
+  currency: Currency;
 
   @ToTrim()
   @IsString()

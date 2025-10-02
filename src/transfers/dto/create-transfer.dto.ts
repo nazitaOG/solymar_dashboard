@@ -10,7 +10,7 @@ import {
   MaxLength,
   IsNotEmpty,
 } from 'class-validator';
-import { TransportType } from '@prisma/client';
+import { Currency, TransportType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { ToDateDay } from '../../common/decorators/date.decorators';
 import { ToTrim } from '../../common/decorators/string.decorators';
@@ -71,4 +71,7 @@ export class CreateTransferDto {
   @Min(0)
   @Max(Number.MAX_SAFE_INTEGER)
   amountPaid: number;
+
+  @IsEnum(Currency)
+  currency: Currency;
 }

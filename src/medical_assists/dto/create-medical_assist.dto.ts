@@ -7,9 +7,11 @@ import {
   IsOptional,
   IsNotEmpty,
   MaxLength,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ToTrim } from '../../common/decorators/string.decorators';
+import { Currency } from '@prisma/client';
 
 export class CreateMedicalAssistDto {
   @Type(() => Number)
@@ -23,6 +25,9 @@ export class CreateMedicalAssistDto {
   @Min(0)
   @Max(Number.MAX_SAFE_INTEGER)
   amountPaid: number;
+
+  @IsEnum(Currency)
+  currency: Currency;
 
   @ToTrim()
   @IsString()

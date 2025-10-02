@@ -4,7 +4,7 @@ import { AtLeastOneField } from '../../common/validators/at-lest-one-field';
 
 class CreateTransferDtoWithoutReservationId extends OmitType(
   CreateTransferDto,
-  ['reservationId'] as const,
+  ['reservationId', 'currency'] as const,
 ) {}
 
 export class UpdateTransferDto extends PartialType(

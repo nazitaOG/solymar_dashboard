@@ -7,10 +7,12 @@ import {
   Max,
   IsNotEmpty,
   MaxLength,
+  IsEnum,
 } from 'class-validator';
 import { ToDateDay } from '../../common/decorators/date.decorators';
 import { Type } from 'class-transformer';
 import { ToTrim } from '../../common/decorators/string.decorators';
+import { Currency } from '@prisma/client';
 
 export class CreateHotelDto {
   @Type(() => Date)
@@ -52,6 +54,9 @@ export class CreateHotelDto {
   @Min(0)
   @Max(Number.MAX_SAFE_INTEGER)
   amountPaid: number;
+
+  @IsEnum(Currency)
+  currency: Currency;
 
   @ToTrim()
   @IsString()

@@ -32,6 +32,7 @@ export class HotelsService {
             bookingReference: dto.bookingReference,
             totalPrice: dto.totalPrice,
             amountPaid: dto.amountPaid,
+            currency: dto.currency,
             roomType: dto.roomType,
             provider: dto.provider,
             reservationId: dto.reservationId,
@@ -43,10 +44,12 @@ export class HotelsService {
             reservationId: true,
             totalPrice: true,
             amountPaid: true,
+            currency: true,
           },
         });
 
         await touchReservation(tx, hotel.reservationId, actorId, {
+          currency: hotel.currency,
           totalAdjustment: Number(hotel.totalPrice),
           paidAdjustment: Number(hotel.amountPaid),
         });
@@ -72,6 +75,7 @@ export class HotelsService {
           totalPrice: true,
           amountPaid: true,
           reservationId: true,
+          currency: true,
         },
       });
 
@@ -114,6 +118,7 @@ export class HotelsService {
         });
 
         await touchReservation(tx, current.reservationId, actorId, {
+          currency: current.currency,
           totalAdjustment:
             typeof dto.totalPrice === 'number'
               ? Number(dto.totalPrice) - current.totalPrice.toNumber()
@@ -139,10 +144,12 @@ export class HotelsService {
             reservationId: true,
             totalPrice: true,
             amountPaid: true,
+            currency: true,
           },
         });
 
         await touchReservation(tx, deleted.reservationId, actorId, {
+          currency: deleted.currency,
           totalAdjustment: -deleted.totalPrice.toNumber(),
           paidAdjustment: -deleted.amountPaid.toNumber(),
         });
