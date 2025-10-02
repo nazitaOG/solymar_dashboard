@@ -12,6 +12,7 @@ export async function touchReservation(
   actorId: string,
   params?: TouchReservationParams,
 ) {
+  // Siempre sellamos la reserva
   await tx.reservation.update({
     where: { id: reservationId },
     data: { updatedBy: actorId },
@@ -24,13 +25,25 @@ export async function touchReservation(
   const total = params.totalAdjustment ?? 0;
   const paid = params.paidAdjustment ?? 0;
 
-  if (total === 0 && paid === 0) return;
-
-  await tx.reservationCurrencyTotal.update({
+  // Hacemos UPSERT para garantizar existencia de la fila por (reservationId, currency).
+  // Nota: usamos increment: 0 cuando no hay cambios para que el update sea válido,
+  // y de todas formas se cree la fila si no existía.
+  await tx.reservationCurrencyTotal.upsert({
     where: { reservationId_currency: { reservationId, currency } },
-    data: {
-      ...(total !== 0 && { totalPrice: { increment: total } }),
-      ...(paid !== 0 && { amountPaid: { increment: paid } }),
+    create: {
+      reservationId,
+      currency,
+      totalPrice: total,
+      amountPaid: paid,
+      // Si tu tabla tiene createdBy/updatedBy, descomenta:
+      // createdBy: actorId,
+      // updatedBy: actorId,
+    },
+    update: {
+      totalPrice: { increment: total },
+      amountPaid: { increment: paid },
+      // Si tu tabla tiene updatedBy:
+      // updatedBy: actorId,
     },
     select: { reservationId: true },
   });
