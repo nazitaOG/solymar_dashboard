@@ -66,7 +66,7 @@ export class CreateCruiseDto {
   amountPaid: number;
 
   @IsEnum(Currency)
-  currency: Currency; 
+  currency: Currency;
 
   @ToTrim()
   @IsUUID()

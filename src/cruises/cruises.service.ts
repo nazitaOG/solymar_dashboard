@@ -63,11 +63,13 @@ export class CruisesService {
             totalPrice: createCruiseDto.totalPrice,
             amountPaid: createCruiseDto.amountPaid,
             reservationId: createCruiseDto.reservationId,
+            currency: createCruiseDto.currency,
             createdBy: actorId,
             updatedBy: actorId,
           },
         });
         await touchReservation(tx, createCruiseDto.reservationId, actorId, {
+          currency: createCruiseDto.currency,
           totalAdjustment: createCruiseDto.totalPrice,
           paidAdjustment: createCruiseDto.amountPaid,
         });
@@ -94,6 +96,7 @@ export class CruisesService {
           totalPrice: true,
           amountPaid: true,
           reservationId: true,
+          currency: true,
         },
       });
 
@@ -154,6 +157,7 @@ export class CruisesService {
           },
         });
         await touchReservation(tx, current.reservationId, actorId, {
+          currency: current.currency,
           totalAdjustment:
             typeof updateCruiseDto.totalPrice === 'number'
               ? updateCruiseDto.totalPrice - current.totalPrice.toNumber()
@@ -178,9 +182,11 @@ export class CruisesService {
             reservationId: true,
             totalPrice: true,
             amountPaid: true,
+            currency: true,
           },
         });
         await touchReservation(tx, deleted.reservationId, actorId, {
+          currency: deleted.currency,
           totalAdjustment: -deleted.totalPrice.toNumber(),
           paidAdjustment: -deleted.amountPaid.toNumber(),
         });
