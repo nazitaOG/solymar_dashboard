@@ -1,0 +1,340 @@
+
+> solymar_dashboard@0.0.1 build /workspace
+> nest build
+
+[96msrc/auth/auth.controller.ts[0m:[93m10[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'User'.
+
+[7m10[0m import { User } from '@prisma/client';
+[7m  [0m [91m         ~~~~[0m
+[96msrc/auth/auth.service.ts[0m:[93m33[0m:[93m38[0m - [91merror[0m[90m TS2339: [0mProperty 'role' does not exist on type 'PrismaService'.
+
+[7m33[0m       const role = await this.prisma.role.findUnique({
+[7m  [0m [91m                                     ~~~~[0m
+[96msrc/auth/auth.service.ts[0m:[93m41[0m:[93m38[0m - [91merror[0m[90m TS2339: [0mProperty 'user' does not exist on type 'PrismaService'.
+
+[7m41[0m       const user = await this.prisma.user.create({
+[7m  [0m [91m                                     ~~~~[0m
+[96msrc/auth/auth.service.ts[0m:[93m71[0m:[93m38[0m - [91merror[0m[90m TS2339: [0mProperty 'user' does not exist on type 'PrismaService'.
+
+[7m71[0m       const user = await this.prisma.user.findUnique({
+[7m  [0m [91m                                     ~~~~[0m
+[96msrc/auth/decorators/get-user.decorator.ts[0m:[93m6[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'User'.
+
+[7m6[0m import { User } from '@prisma/client';
+[7m [0m [91m         ~~~~[0m
+[96msrc/auth/strategies/jwt.strategy.ts[0m:[93m31[0m:[93m36[0m - [91merror[0m[90m TS2339: [0mProperty 'user' does not exist on type 'PrismaService'.
+
+[7m31[0m     const user = await this.prisma.user.findUnique({
+[7m  [0m [91m                                   ~~~~[0m
+[96msrc/common/db/touch-reservation.db.ts[0m:[93m1[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'Currency'.
+
+[7m1[0m import { Currency, PrismaClient } from '@prisma/client';
+[7m [0m [91m         ~~~~~~~~[0m
+[96msrc/common/db/touch-reservation.db.ts[0m:[93m1[0m:[93m20[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'PrismaClient'.
+
+[7m1[0m import { Currency, PrismaClient } from '@prisma/client';
+[7m [0m [91m                   ~~~~~~~~~~~~[0m
+[96msrc/common/logging/structured-logger.ts[0m:[93m3[0m:[93m15[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'Prisma'.
+
+[7m3[0m import type { Prisma } from '@prisma/client';
+[7m [0m [91m              ~~~~~~[0m
+[96msrc/common/prisma/prisma.service.ts[0m:[93m9[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'PrismaClient'.
+
+[7m9[0m import { PrismaClient } from '@prisma/client';
+[7m [0m [91m         ~~~~~~~~~~~~[0m
+[96msrc/common/prisma/prisma.service.ts[0m:[93m23[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty '$connect' does not exist on type 'PrismaService'.
+
+[7m23[0m     await this.$connect();
+[7m  [0m [91m               ~~~~~~~~[0m
+[96msrc/common/prisma/prisma.service.ts[0m:[93m27[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty '$disconnect' does not exist on type 'PrismaService'.
+
+[7m27[0m     await this.$disconnect();
+[7m  [0m [91m               ~~~~~~~~~~~[0m
+[96msrc/common/prisma/prisma.service.ts[0m:[93m33[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty '$disconnect' does not exist on type 'PrismaService'.
+
+[7m33[0m     await this.$disconnect();
+[7m  [0m [91m               ~~~~~~~~~~~[0m
+[96msrc/common/utils/handle-request/handle-request-prisma.ts[0m:[93m6[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'Prisma'.
+
+[7m6[0m import { Prisma } from '@prisma/client';
+[7m [0m [91m         ~~~~~~[0m
+[96msrc/common/utils/handle-request/handle-request-prisma.ts[0m:[93m44[0m:[93m22[0m - [91merror[0m[90m TS2339: [0mProperty 'code' does not exist on type 'unknown'.
+
+[7m44[0m   const code = error.code;
+[7m  [0m [91m                     ~~~~[0m
+[96msrc/common/utils/handle-request/handle-request-prisma.ts[0m:[93m45[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'meta' does not exist on type 'unknown'.
+
+[7m45[0m   const model = metaModel(error.meta);
+[7m  [0m [91m                                ~~~~[0m
+[96msrc/common/utils/handle-request/handle-request-prisma.ts[0m:[93m46[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'meta' does not exist on type 'unknown'.
+
+[7m46[0m   const target = metaTarget(error.meta);
+[7m  [0m [91m                                  ~~~~[0m
+[96msrc/common/utils/handle-request/handle-request-prisma.ts[0m:[93m47[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'meta' does not exist on type 'unknown'.
+
+[7m47[0m   const cause = metaString(error.meta, 'cause');
+[7m  [0m [91m                                 ~~~~[0m
+[96msrc/common/utils/handle-request/handle-request-prisma.ts[0m:[93m48[0m:[93m39[0m - [91merror[0m[90m TS2339: [0mProperty 'meta' does not exist on type 'unknown'.
+
+[7m48[0m   const constraint = metaString(error.meta, 'constraint');
+[7m  [0m [91m                                      ~~~~[0m
+[96msrc/cruises/cruises.controller.ts[0m:[93m16[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'User'.
+
+[7m16[0m import { User } from '@prisma/client';
+[7m  [0m [91m         ~~~~[0m
+[96msrc/cruises/cruises.service.ts[0m:[93m10[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'PrismaClient'.
+
+[7m10[0m import { PrismaClient } from '@prisma/client';
+[7m  [0m [91m         ~~~~~~~~~~~~[0m
+[96msrc/cruises/cruises.service.ts[0m:[93m57[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m57[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m  [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/cruises/cruises.service.ts[0m:[93m98[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty 'cruise' does not exist on type 'PrismaService'.
+
+[7m98[0m         return this.prisma.cruise.findUniqueOrThrow({ where: { id } });
+[7m  [0m [91m                           ~~~~~~[0m
+[96msrc/cruises/cruises.service.ts[0m:[93m111[0m:[93m43[0m - [91merror[0m[90m TS2339: [0mProperty 'cruise' does not exist on type 'PrismaService'.
+
+[7m111[0m         const current = await this.prisma.cruise.findUniqueOrThrow({
+[7m   [0m [91m                                          ~~~~~~[0m
+[96msrc/cruises/cruises.service.ts[0m:[93m159[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m159[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/cruises/cruises.service.ts[0m:[93m207[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m207[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/cruises/dto/create-cruise.dto.ts[0m:[93m16[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'Currency'.
+
+[7m16[0m import { Currency } from '@prisma/client';
+[7m  [0m [91m         ~~~~~~~~[0m
+[96msrc/excursions/dto/create-excursion.dto.ts[0m:[93m15[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'Currency'.
+
+[7m15[0m import { Currency } from '@prisma/client';
+[7m  [0m [91m         ~~~~~~~~[0m
+[96msrc/excursions/excursions.controller.ts[0m:[93m16[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'User'.
+
+[7m16[0m import { User } from '@prisma/client';
+[7m  [0m [91m         ~~~~[0m
+[96msrc/excursions/excursions.service.ts[0m:[93m7[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'PrismaClient'.
+
+[7m7[0m import { PrismaClient } from '@prisma/client';
+[7m [0m [91m         ~~~~~~~~~~~~[0m
+[96msrc/excursions/excursions.service.ts[0m:[93m25[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m25[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m  [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/excursions/excursions.service.ts[0m:[93m76[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'excursion' does not exist on type 'PrismaService'.
+
+[7m76[0m       () => this.prisma.excursion.findUniqueOrThrow({ where: { id } }),
+[7m  [0m [91m                        ~~~~~~~~~[0m
+[96msrc/excursions/excursions.service.ts[0m:[93m90[0m:[93m43[0m - [91merror[0m[90m TS2339: [0mProperty 'excursion' does not exist on type 'PrismaService'.
+
+[7m90[0m         const current = await this.prisma.excursion.findUniqueOrThrow({
+[7m  [0m [91m                                          ~~~~~~~~~[0m
+[96msrc/excursions/excursions.service.ts[0m:[93m108[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m108[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/excursions/excursions.service.ts[0m:[93m165[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m165[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/hotels/dto/create-hotel.dto.ts[0m:[93m15[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'Currency'.
+
+[7m15[0m import { Currency } from '@prisma/client';
+[7m  [0m [91m         ~~~~~~~~[0m
+[96msrc/hotels/hotels.controller.ts[0m:[93m16[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'User'.
+
+[7m16[0m import { User } from '@prisma/client';
+[7m  [0m [91m         ~~~~[0m
+[96msrc/hotels/hotels.service.ts[0m:[93m8[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'PrismaClient'.
+
+[7m8[0m import { PrismaClient } from '@prisma/client';
+[7m [0m [91m         ~~~~~~~~~~~~[0m
+[96msrc/hotels/hotels.service.ts[0m:[93m29[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m29[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m  [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/hotels/hotels.service.ts[0m:[93m82[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'hotel' does not exist on type 'PrismaService'.
+
+[7m82[0m       () => this.prisma.hotel.findUniqueOrThrow({ where: { id } }),
+[7m  [0m [91m                        ~~~~~[0m
+[96msrc/hotels/hotels.service.ts[0m:[93m94[0m:[93m43[0m - [91merror[0m[90m TS2339: [0mProperty 'hotel' does not exist on type 'PrismaService'.
+
+[7m94[0m         const current = await this.prisma.hotel.findUniqueOrThrow({
+[7m  [0m [91m                                          ~~~~~[0m
+[96msrc/hotels/hotels.service.ts[0m:[93m124[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m124[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/hotels/hotels.service.ts[0m:[93m183[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m183[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/medical_assists/dto/create-medical_assist.dto.ts[0m:[93m14[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'Currency'.
+
+[7m14[0m import { Currency } from '@prisma/client';
+[7m  [0m [91m         ~~~~~~~~[0m
+[96msrc/medical_assists/medical_assists.controller.ts[0m:[93m16[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'User'.
+
+[7m16[0m import { User } from '@prisma/client';
+[7m  [0m [91m         ~~~~[0m
+[96msrc/medical_assists/medical_assists.service.ts[0m:[93m7[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'PrismaClient'.
+
+[7m7[0m import { PrismaClient } from '@prisma/client';
+[7m [0m [91m         ~~~~~~~~~~~~[0m
+[96msrc/medical_assists/medical_assists.service.ts[0m:[93m24[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m24[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m  [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/medical_assists/medical_assists.service.ts[0m:[93m71[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'medicalAssist' does not exist on type 'PrismaService'.
+
+[7m71[0m       () => this.prisma.medicalAssist.findUniqueOrThrow({ where: { id } }),
+[7m  [0m [91m                        ~~~~~~~~~~~~~[0m
+[96msrc/medical_assists/medical_assists.service.ts[0m:[93m83[0m:[93m43[0m - [91merror[0m[90m TS2339: [0mProperty 'medicalAssist' does not exist on type 'PrismaService'.
+
+[7m83[0m         const current = await this.prisma.medicalAssist.findUniqueOrThrow({
+[7m  [0m [91m                                          ~~~~~~~~~~~~~[0m
+[96msrc/medical_assists/medical_assists.service.ts[0m:[93m101[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m101[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/medical_assists/medical_assists.service.ts[0m:[93m156[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m156[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/paxs/paxs.controller.ts[0m:[93m16[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'User'.
+
+[7m16[0m import { User } from '@prisma/client';
+[7m  [0m [91m         ~~~~[0m
+[96msrc/paxs/paxs.service.ts[0m:[93m28[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty 'pax' does not exist on type 'PrismaService'.
+
+[7m28[0m         return this.prisma.pax.create({
+[7m  [0m [91m                           ~~~[0m
+[96msrc/paxs/paxs.service.ts[0m:[93m80[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'pax' does not exist on type 'PrismaService'.
+
+[7m80[0m         this.prisma.pax.findMany({
+[7m  [0m [91m                    ~~~[0m
+[96msrc/paxs/paxs.service.ts[0m:[93m94[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'pax' does not exist on type 'PrismaService'.
+
+[7m94[0m         this.prisma.pax.findUniqueOrThrow({
+[7m  [0m [91m                    ~~~[0m
+[96msrc/paxs/paxs.service.ts[0m:[93m112[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty 'pax' does not exist on type 'PrismaService'.
+
+[7m112[0m         return this.prisma.pax.update({
+[7m   [0m [91m                           ~~~[0m
+[96msrc/paxs/paxs.service.ts[0m:[93m212[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'pax' does not exist on type 'PrismaService'.
+
+[7m212[0m         this.prisma.pax.delete({
+[7m   [0m [91m                    ~~~[0m
+[96msrc/planes/dto/create-plane.dto.ts[0m:[93m16[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'Currency'.
+
+[7m16[0m import { Currency } from '@prisma/client';
+[7m  [0m [91m         ~~~~~~~~[0m
+[96msrc/planes/planes.controller.ts[0m:[93m16[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'User'.
+
+[7m16[0m import { User } from '@prisma/client';
+[7m  [0m [91m         ~~~~[0m
+[96msrc/planes/planes.service.ts[0m:[93m9[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'PrismaClient'.
+
+[7m9[0m import { PrismaClient } from '@prisma/client';
+[7m [0m [91m         ~~~~~~~~~~~~[0m
+[96msrc/planes/planes.service.ts[0m:[93m51[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m51[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m  [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/planes/planes.service.ts[0m:[93m106[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'plane' does not exist on type 'PrismaService'.
+
+[7m106[0m       () => this.prisma.plane.findUniqueOrThrow({ where: { id } }),
+[7m   [0m [91m                        ~~~~~[0m
+[96msrc/planes/planes.service.ts[0m:[93m119[0m:[93m43[0m - [91merror[0m[90m TS2339: [0mProperty 'plane' does not exist on type 'PrismaService'.
+
+[7m119[0m         const current = await this.prisma.plane.findUniqueOrThrow({
+[7m   [0m [91m                                          ~~~~~[0m
+[96msrc/planes/planes.service.ts[0m:[93m166[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m166[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/planes/planes.service.ts[0m:[93m230[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m230[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/reservations/reservations.controller.ts[0m:[93m16[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'User'.
+
+[7m16[0m import { User } from '@prisma/client';
+[7m  [0m [91m         ~~~~[0m
+[96msrc/reservations/reservations.service.ts[0m:[93m28[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m28[0m         this.prisma.$transaction(async (tx) => {
+[7m  [0m [91m                    ~~~~~~~~~~~~[0m
+[96msrc/reservations/reservations.service.ts[0m:[93m93[0m:[93m30[0m - [91merror[0m[90m TS2339: [0mProperty 'reservation' does not exist on type 'PrismaService'.
+
+[7m93[0m           typeof this.prisma.reservation.findMany
+[7m  [0m [91m                             ~~~~~~~~~~~[0m
+[96msrc/reservations/reservations.service.ts[0m:[93m99[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'reservation' does not exist on type 'PrismaService'.
+
+[7m99[0m         const rows = await this.prisma.reservation.findMany({
+[7m  [0m [91m                                       ~~~~~~~~~~~[0m
+[96msrc/reservations/reservations.service.ts[0m:[93m132[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'reservation' does not exist on type 'PrismaService'.
+
+[7m132[0m         this.prisma.reservation.findUniqueOrThrow({
+[7m   [0m [91m                    ~~~~~~~~~~~[0m
+[96msrc/reservations/reservations.service.ts[0m:[93m152[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m152[0m         this.prisma.$transaction(async (tx) => {
+[7m   [0m [91m                    ~~~~~~~~~~~~[0m
+[96msrc/reservations/reservations.service.ts[0m:[93m153[0m:[93m67[0m - [91merror[0m[90m TS2339: [0mProperty 'data' does not exist on type '{}'.
+
+[7m153[0m           const data: Parameters<typeof tx.reservation.update>[0]['data'] = {
+[7m   [0m [91m                                                                  ~~~~~~[0m
+[96msrc/reservations/reservations.service.ts[0m:[93m195[0m:[93m46[0m - [91merror[0m[90m TS2345: [0mArgument of type 'unknown' is not assignable to parameter of type 'string'.
+
+[7m195[0m               (pid) => !incomingIds.includes(pid),
+[7m   [0m [91m                                             ~~~[0m
+[96msrc/reservations/reservations.service.ts[0m:[93m256[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'reservation' does not exist on type 'PrismaService'.
+
+[7m256[0m         this.prisma.reservation.delete({
+[7m   [0m [91m                    ~~~~~~~~~~~[0m
+[96msrc/transfers/dto/create-transfer.dto.ts[0m:[93m13[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'Currency'.
+
+[7m13[0m import { Currency, TransportType } from '@prisma/client';
+[7m  [0m [91m         ~~~~~~~~[0m
+[96msrc/transfers/dto/create-transfer.dto.ts[0m:[93m13[0m:[93m20[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'TransportType'.
+
+[7m13[0m import { Currency, TransportType } from '@prisma/client';
+[7m  [0m [91m                   ~~~~~~~~~~~~~[0m
+[96msrc/transfers/transfers.controller.ts[0m:[93m16[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'User'.
+
+[7m16[0m import { User } from '@prisma/client';
+[7m  [0m [91m         ~~~~[0m
+[96msrc/transfers/transfers.service.ts[0m:[93m9[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@prisma/client"' has no exported member 'PrismaClient'.
+
+[7m9[0m import { PrismaClient } from '@prisma/client';
+[7m [0m [91m         ~~~~~~~~~~~~[0m
+[96msrc/transfers/transfers.service.ts[0m:[93m49[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m49[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m  [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/transfers/transfers.service.ts[0m:[93m105[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'transfer' does not exist on type 'PrismaService'.
+
+[7m105[0m       () => this.prisma.transfer.findUniqueOrThrow({ where: { id } }),
+[7m   [0m [91m                        ~~~~~~~~[0m
+[96msrc/transfers/transfers.service.ts[0m:[93m117[0m:[93m43[0m - [91merror[0m[90m TS2339: [0mProperty 'transfer' does not exist on type 'PrismaService'.
+
+[7m117[0m         const current = await this.prisma.transfer.findUniqueOrThrow({
+[7m   [0m [91m                                          ~~~~~~~~[0m
+[96msrc/transfers/transfers.service.ts[0m:[93m164[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m164[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+[96msrc/transfers/transfers.service.ts[0m:[93m225[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty '$transaction' does not exist on type 'PrismaService'.
+
+[7m225[0m         return this.prisma.$transaction(async (tx: PrismaClient) => {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+
+Found 83 error(s).
+
+ ELIFECYCLE  Command failed with exit code 1.
