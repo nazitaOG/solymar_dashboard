@@ -13,8 +13,7 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
-  constructor(config: ConfigService) {
-    // Lee la URL completa (Compose ya le pone host = db)
+  constructor(private readonly config: ConfigService) {
     const url = config.get<string>('DATABASE_URL');
     super({ datasources: { db: { url } } });
   }
@@ -27,19 +26,11 @@ export class PrismaService
     await this.$disconnect();
   }
 
-  // Se dispara cuando Nest procesa señales si usás app.enableShutdownHooks()
-  async onApplicationShutdown(): Promise<void> {
-    // doble seguro: si ya se desconectó, no pasa nada
-    await this.$disconnect();
-  }
-
-  // Conecta el evento beforeExit de Prisma con el ciclo de shutdown de Nest
+  // Maneja el cierre limpio del proceso (sin ESLint warnings)
   enableShutdownHooks(app: INestApplication): void {
-    (this as unknown as { $on: (e: 'beforeExit', cb: () => void) => void }).$on(
-      'beforeExit',
-      () => {
-        void app.close();
-      },
-    );
+    process.on('beforeExit', () => {
+      // No devolvemos una promesa — Nest manejará el cierre
+      void app.close(); // `void` indica intencionalmente que no esperamos resultado
+    });
   }
 }

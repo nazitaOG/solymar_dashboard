@@ -11,7 +11,6 @@ import { TransfersModule } from './transfers/transfers.module';
 import { ExcursionsModule } from './excursions/excursions.module';
 import { MedicalAssistsModule } from './medical_assists/medical_assists.module';
 import { AuthModule } from './auth/auth.module';
-import { CardsModule } from './cards/cards.module';
 
 @Module({
   imports: [
@@ -59,7 +58,6 @@ import { CardsModule } from './cards/cards.module';
     ExcursionsModule,
     MedicalAssistsModule,
     AuthModule,
-    CardsModule,
   ],
 })
 export class AppModule {}
