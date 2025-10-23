@@ -101,4 +101,57 @@ export class AuthService {
       };
     });
   }
+
+  async refresh(userId: string) {
+    return handleRequest(async () => {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          isActive: true,
+        },
+      });
+
+      if (!user) throw new UnauthorizedException('User not found');
+      if (!user.isActive)
+        throw new UnauthorizedException('User is blocked, contact admin');
+
+      // Generamos nuevo token
+      const token = await this.getJwtUtils.generateAccessToken({
+        sub: user.id,
+      });
+
+      return {
+        username: user.username,
+        email: user.email,
+        isActive: user.isActive,
+        token,
+      };
+    });
+  }
+
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        roleUsers: {
+          include: {
+            role: { select: { description: true } },
+          },
+        },
+      },
+    });
+
+    if (!user) throw new UnauthorizedException('User not found');
+
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      isActive: user.isActive,
+      roles: user.roleUsers.map((ru) => ru.role.description),
+    };
+  }
 }
