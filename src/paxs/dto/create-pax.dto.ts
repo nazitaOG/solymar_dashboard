@@ -26,6 +26,7 @@ export class CreatePaxDto {
   @ToUpperTrim()
   @IsString()
   @MaxLength(128)
+  @IsNotEmpty()
   nationality!: string;
 
   // PASAPORTE (requerido si NO viene DNI)

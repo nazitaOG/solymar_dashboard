@@ -206,19 +206,18 @@ export class PaxService {
   }
 
   remove(actorId: string, id: string) {
-    // si luego haces soft delete, acá podrías registrar deletedBy/At
     return handleRequest(
-      () =>
-        this.prisma.pax.delete({
-          where: { id },
-          include: { passport: true, dni: true },
-        }),
-      this.logger,
-      {
-        op: 'PaxService.remove',
-        actorId,
-        extras: { id },
+      async () => {
+        return this.prisma.$transaction(async (tx) => {
+          // 1️⃣ Eliminar documentos asociados primero
+          await tx.dni.deleteMany({ where: { paxId: id } });
+          await tx.passport.deleteMany({ where: { paxId: id } });
+          // 2️⃣ Luego eliminar el pasajero
+          return tx.pax.delete({ where: { id } });
+        });
       },
+      this.logger,
+      { op: 'PaxService.remove', actorId, extras: { id } },
     );
   }
 }
