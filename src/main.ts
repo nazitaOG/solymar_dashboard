@@ -50,47 +50,37 @@ async function bootstrap() {
     }),
   );
 
-  // ===== CORS explícito =====
+  // ===== CORS dinámico =====
   const corsEnabled =
     config.get('CORS_ENABLED') === true ||
     config.get('CORS_ENABLED') === 'true';
 
-  const rawOrigins = (config.get<string>('CORS_ORIGINS') ?? '*').trim();
-  const allowedOrigins =
-    rawOrigins === '*'
-      ? ['*']
-      : rawOrigins
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean);
-
-  // Para evitar O(n) includes y tener tipado estricto
-  const allowedOriginSet = new Set(allowedOrigins);
+  const corsOrigins = (config.get<string>('CORS_ORIGINS') ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   const corsOptions: CorsOptions = {
-    origin: (
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void,
-    ): void => {
-      if (!origin) {
-        callback(null, true);
-        return;
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // permitir Postman, curl, etc.
+      if (corsOrigins.includes('*') || corsOrigins.includes(origin)) {
+        return callback(null, true);
       }
-      if (allowedOriginSet.has('*') || allowedOriginSet.has(origin)) {
-        callback(null, true);
-        return;
-      }
-      callback(new Error(`CORS: Origin ${origin} no permitido`));
+      console.warn(`🚫 CORS bloqueado para origen: ${origin}`);
+      return callback(new Error(`CORS: Origin ${origin} no permitido`));
     },
-    credentials: false,
-    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     optionsSuccessStatus: 204,
-    maxAge: 86_400, // 1 día
+    maxAge: 86400, // 1 día
   };
 
   if (corsEnabled) {
     app.enableCors(corsOptions);
+    console.log('CORS habilitado para:', corsOrigins.join(', ') || 'todos (*)');
+  } else {
+    console.warn('⚠️  CORS deshabilitado');
   }
 
   // ===== Pipes de validación =====

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -8,6 +8,7 @@ import { Auth } from './decorators/auth.decorator';
 import { ValidRoles } from './interfaces/valid-roles.interface';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from '@prisma/client';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -29,5 +30,17 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginUserDto) {
     return this.authService.login(dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('refresh')
+  async refresh(@GetUser() user: User) {
+    return this.authService.refresh(user.id);
+  }
+
+  @Auth()
+  @Get('profile')
+  getProfile(@GetUser() user: User) {
+    return this.authService.getProfile(user.id);
   }
 }
