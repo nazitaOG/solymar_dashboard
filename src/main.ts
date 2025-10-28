@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { PrismaService } from './common/prisma/prisma.service';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 // Tipos para CORS (evita any y arregla eslint @typescript-eslint/no-unsafe-*)
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
@@ -95,6 +96,28 @@ async function bootstrap() {
 
   // ===== Prefijo global =====
   app.setGlobalPrefix('api');
+
+  // ===== Swagger / OpenAPI =====
+  const openApiConfig = new DocumentBuilder()
+    .setTitle('Solymar Dashboard API')
+    .setDescription('Documentación de la API de reservas (NestJS + Prisma)')
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        in: 'header',
+      },
+      'bearer',
+    )
+    .build();
+
+  const openApiDocument = SwaggerModule.createDocument(app, openApiConfig);
+  SwaggerModule.setup('docs', app, openApiDocument, {
+    swaggerOptions: { persistAuthorization: true },
+  });
 
   // ===== Graceful shutdown (Nest + Prisma) =====
   app.enableShutdownHooks(); // habilita manejo de SIGTERM/SIGINT en Nest
