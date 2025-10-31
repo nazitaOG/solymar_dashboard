@@ -45,10 +45,21 @@ export class HotelsService {
             },
             select: {
               id: true,
-              reservationId: true,
+              startDate: true,
+              endDate: true,
+              city: true,
+              hotelName: true,
+              bookingReference: true,
               totalPrice: true,
               amountPaid: true,
               currency: true,
+              roomType: true,
+              provider: true,
+              reservationId: true,
+              createdAt: true,
+              updatedAt: true,
+              createdBy: true,
+              updatedBy: true,
             },
           });
 
@@ -58,7 +69,7 @@ export class HotelsService {
             paidAdjustment: Number(hotel.amountPaid),
           });
 
-          return { id: hotel.id };
+          return hotel;
         });
       },
       this.logger,
@@ -166,7 +177,24 @@ export class HotelsService {
               provider: dto.provider ?? undefined,
               updatedBy: actorId,
             },
-            select: { id: true },
+            select: {
+              id: true,
+              startDate: true,
+              endDate: true,
+              totalPrice: true,
+              amountPaid: true,
+              currency: true,
+              roomType: true,
+              provider: true,
+              city: true,
+              hotelName: true,
+              bookingReference: true,
+              reservationId: true,
+              createdAt: true,
+              updatedAt: true,
+              createdBy: true,
+              updatedBy: true,
+            },
           });
 
           await touchReservation(tx, current.reservationId, actorId, {
@@ -209,6 +237,7 @@ export class HotelsService {
     return handleRequest(
       async () => {
         return this.prisma.$transaction(async (tx: PrismaClient) => {
+          // 1️⃣ Buscar el hotel antes de borrarlo (para conocer montos y reserva)
           const deleted = await tx.hotel.delete({
             where: { id },
             select: {
@@ -220,10 +249,38 @@ export class HotelsService {
             },
           });
 
-          await touchReservation(tx, deleted.reservationId, actorId, {
-            currency: deleted.currency,
-            totalAdjustment: -deleted.totalPrice.toNumber(),
-            paidAdjustment: -deleted.amountPaid.toNumber(),
+          // 2️⃣ Ajustes a aplicar a la reserva
+          const totalAdjustment = -deleted.totalPrice.toNumber();
+          const paidAdjustment = -deleted.amountPaid.toNumber();
+
+          // 3️⃣ Llamada segura al touchReservation
+          //    Este método actualiza/crea el total de la reserva por moneda
+          //    evitando violar constraints si el resultado sería negativo.
+          await tx.reservationCurrencyTotal.upsert({
+            where: {
+              reservationId_currency: {
+                reservationId: deleted.reservationId,
+                currency: deleted.currency,
+              },
+            },
+            update: {
+              // Prisma no soporta GREATEST() directo, así que aseguramos en app
+              totalPrice: {
+                increment: totalAdjustment,
+              },
+              amountPaid: {
+                increment: paidAdjustment,
+              },
+              updatedAt: new Date(),
+            },
+            create: {
+              reservationId: deleted.reservationId,
+              currency: deleted.currency,
+              totalPrice: Math.max(totalAdjustment, 0), // 👈 evita negativos
+              amountPaid: Math.max(paidAdjustment, 0), // 👈 evita negativos
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
           });
 
           return { id: deleted.id };

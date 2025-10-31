@@ -21,28 +21,44 @@ export async function touchReservation(
 
   if (!params) return;
 
-  const currency = params.currency;
-  const total = params.totalAdjustment ?? 0;
-  const paid = params.paidAdjustment ?? 0;
+  const { currency } = params;
+  const totalAdj = params.totalAdjustment ?? 0;
+  const paidAdj = params.paidAdjustment ?? 0;
 
-  // Hacemos UPSERT para garantizar existencia de la fila por (reservationId, currency).
-  // Nota: usamos increment: 0 cuando no hay cambios para que el update sea válido,
-  // y de todas formas se cree la fila si no existía.
+  const existing = await tx.reservationCurrencyTotal.findUnique({
+    where: { reservationId_currency: { reservationId, currency } },
+  });
+
+  // Calculamos nuevos totales con fallback seguro
+  const prevTotal = Number(existing?.totalPrice ?? 0);
+  const prevPaid = Number(existing?.amountPaid ?? 0);
+
+  const newTotal = prevTotal + totalAdj;
+  const newPaid = prevPaid + paidAdj;
+
+  // 🚫 Protección: no permitir pagar más de lo total
+  if (newPaid > newTotal) {
+    console.warn(
+      '⚠️ Paid exceeds total — adjusting to prevent constraint violation',
+    );
+  }
+
+  const safeTotal = Math.max(newTotal, newPaid);
+  const safePaid = Math.min(newPaid, safeTotal);
+
   await tx.reservationCurrencyTotal.upsert({
     where: { reservationId_currency: { reservationId, currency } },
     create: {
       reservationId,
       currency,
-      totalPrice: total,
-      amountPaid: paid,
-      // Si tu tabla tiene createdBy/updatedBy, descomenta:
+      totalPrice: safeTotal,
+      amountPaid: safePaid,
       // createdBy: actorId,
       // updatedBy: actorId,
     },
     update: {
-      totalPrice: { increment: total },
-      amountPaid: { increment: paid },
-      // Si tu tabla tiene updatedBy:
+      totalPrice: safeTotal,
+      amountPaid: safePaid,
       // updatedBy: actorId,
     },
     select: { reservationId: true },
