@@ -105,6 +105,34 @@ export class CruisesService {
     );
   }
 
+  findByReservation(reservationId: string) {
+    return handleRequest(
+      async () => {
+        // Verificamos existencia de la reserva antes de buscar (opcional pero más prolijo)
+        const exists = await this.prisma.reservation.findUnique({
+          where: { id: reservationId },
+          select: { id: true },
+        });
+        if (!exists) {
+          throw new Error(`Reservation ${reservationId} not found`);
+        }
+
+        // Devolvemos todos los cruceros de esa reserva
+        const cruises = await this.prisma.cruise.findMany({
+          where: { reservationId },
+          orderBy: { startDate: 'asc' },
+        });
+
+        return cruises;
+      },
+      this.logger,
+      {
+        op: 'CruisesService.findByReservation',
+        extras: { reservationId },
+      },
+    );
+  }
+
   update(actorId: string, id: string, updateCruiseDto: UpdateCruiseDto) {
     return handleRequest(
       async () => {

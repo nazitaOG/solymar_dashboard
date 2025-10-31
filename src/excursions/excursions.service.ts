@@ -82,6 +82,34 @@ export class ExcursionsService {
     );
   }
 
+  findByReservation(reservationId: string) {
+    return handleRequest(
+      async () => {
+        // 🔍 (Opcional) Verificamos existencia de la reserva antes de buscar
+        const exists = await this.prisma.reservation.findUnique({
+          where: { id: reservationId },
+          select: { id: true },
+        });
+        if (!exists) {
+          throw new Error(`Reservation ${reservationId} not found`);
+        }
+
+        // 🧭 Buscar excursiones asociadas a la reserva
+        const excursions = await this.prisma.excursion.findMany({
+          where: { reservationId },
+          orderBy: { excursionDate: 'asc' },
+        });
+
+        return excursions;
+      },
+      this.logger,
+      {
+        op: 'ExcursionsService.findByReservation',
+        extras: { reservationId },
+      },
+    );
+  }
+
   // actorId = id del usuario autenticado
   update(actorId: string, id: string, dto: UpdateExcursionDto) {
     return handleRequest(

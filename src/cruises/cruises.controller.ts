@@ -30,6 +30,11 @@ export class CruisesController {
     return this.cruisesService.findOne(id);
   }
 
+  @Get('/reservation/:id')
+  findByReservation(@Param('id', ParseUUIDPipe) id: string) {
+    return this.cruisesService.findByReservation(id);
+  }
+
   @Patch(':id')
   update(
     @GetUser() user: User,

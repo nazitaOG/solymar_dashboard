@@ -33,6 +33,11 @@ export class ExcursionsController {
     return this.excursionsService.findOne(id);
   }
 
+  @Get('/reservation/:id')
+  findByReservation(@Param('id', ParseUUIDPipe) id: string) {
+    return this.excursionsService.findByReservation(id);
+  }
+
   @Patch(':id')
   update(
     @GetUser() user: User,

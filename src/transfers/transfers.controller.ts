@@ -30,6 +30,11 @@ export class TransfersController {
     return this.transfersService.findOne(id);
   }
 
+  @Get('/reservation/:id')
+  findByReservation(@Param('id') id: string) {
+    return this.transfersService.findByReservation(id);
+  }
+
   @Patch(':id')
   update(
     @GetUser() user: User,

@@ -30,6 +30,11 @@ export class PlanesController {
     return this.planesService.findOne(id);
   }
 
+  @Get('/reservation/:id')
+  findByReservation(@Param('id') id: string) {
+    return this.planesService.findByReservation(id);
+  }
+
   @Patch(':id')
   update(
     @GetUser() user: User,

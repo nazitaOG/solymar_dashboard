@@ -9,10 +9,11 @@ import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { NestStructuredLogger } from '../common/logging/structured-logger';
 
-type FindAllReservationsParams = {
+export type FindAllReservationsParams = {
   paxId?: string; // filtra reservas que incluyan a este PAX
   offset?: number; // desplazamiento (default 0)
   limit?: number; // tamaño de página (default 20, máx 100)
+  include?: string | string[]; // includes para la consulta
 };
 
 @Injectable()
@@ -80,7 +81,6 @@ export class ReservationsService {
   findAll(params: FindAllReservationsParams = {}) {
     return handleRequest(
       async () => {
-        // saneo offset/limit
         let offset = Number.isFinite(params.offset) ? Number(params.offset) : 0;
         if (offset < 0) offset = 0;
 
@@ -88,21 +88,57 @@ export class ReservationsService {
         if (limit <= 0) limit = 20;
         if (limit > 100) limit = 100;
 
-        // filtro por paxId (si viene)
+        // Filtro opcional por pax
         const where: Parameters<
           typeof this.prisma.reservation.findMany
         >[0]['where'] = params.paxId
           ? { paxReservations: { some: { paxId: params.paxId } } }
           : undefined;
 
-        // pedimos +1 para saber si hay próxima página
+        // Construcción dinámica de includes
+        const includes = new Set(
+          typeof params.include === 'string'
+            ? params.include.split(',').map((i) => i.trim())
+            : params.include || [],
+        );
+
+        const include: Parameters<
+          typeof this.prisma.reservation.findMany
+        >[0]['include'] = {};
+
+        if (includes.has('paxReservations')) {
+          include.paxReservations = {
+            include: {
+              pax: {
+                select: {
+                  id: true,
+                  name: true,
+                  birthDate: true,
+                  nationality: true,
+                },
+              },
+            },
+          };
+        }
+
+        if (includes.has('currencyTotals')) {
+          include.currencyTotals = true;
+        }
+
+        if (includes.has('hotels')) include.hotels = true;
+        if (includes.has('planes')) include.planes = true;
+        if (includes.has('cruises')) include.cruises = true;
+        if (includes.has('transfers')) include.transfers = true;
+        if (includes.has('excursions')) include.excursions = true;
+        if (includes.has('medicalAssists')) include.medicalAssists = true;
+
+        // Query principal
         const rows = await this.prisma.reservation.findMany({
           where,
           orderBy: { createdAt: 'desc' },
           skip: offset,
           take: limit + 1,
-          // NOTA: no incluimos relaciones pesadas por defecto
-          // si más adelante querés sumar include, lo agregamos con un flag
+          include, // 👈 dinámico
         });
 
         const hasNext = rows.length > limit;
@@ -121,6 +157,7 @@ export class ReservationsService {
           paxId: params.paxId,
           offset: params.offset,
           limit: params.limit,
+          include: params.include,
         },
       },
     );

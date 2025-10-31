@@ -88,6 +88,34 @@ export class HotelsService {
     );
   }
 
+  findByReservation(reservationId: string) {
+    return handleRequest(
+      async () => {
+        // 🔎 Validamos que la reserva exista (opcional pero consistente)
+        const exists = await this.prisma.reservation.findUnique({
+          where: { id: reservationId },
+          select: { id: true },
+        });
+        if (!exists) {
+          throw new Error(`Reservation ${reservationId} not found`);
+        }
+
+        // 🏨 Traemos los hoteles de esa reserva ordenados por fecha
+        const hotels = await this.prisma.hotel.findMany({
+          where: { reservationId },
+          orderBy: { startDate: 'asc' },
+        });
+
+        return hotels;
+      },
+      this.logger,
+      {
+        op: 'HotelsService.findByReservation',
+        extras: { reservationId },
+      },
+    );
+  }
+
   update(actorId: string, id: string, dto: UpdateHotelDto) {
     return handleRequest(
       async () => {

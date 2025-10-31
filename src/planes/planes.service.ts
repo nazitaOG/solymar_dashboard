@@ -112,6 +112,35 @@ export class PlanesService {
     );
   }
 
+  findByReservation(reservationId: string) {
+    return handleRequest(
+      async () => {
+        // ✈️ Validamos que la reserva exista (coherencia con los demás servicios)
+        const exists = await this.prisma.reservation.findUnique({
+          where: { id: reservationId },
+          select: { id: true },
+        });
+        if (!exists) {
+          throw new Error(`Reservation ${reservationId} not found`);
+        }
+
+        // Obtenemos todos los vuelos asociados a esa reserva
+        // 🧭 Obtenemos todos los vuelos asociados a esa reserva
+        const planes = await this.prisma.plane.findMany({
+          where: { reservationId },
+          orderBy: { departureDate: 'asc' },
+        });
+
+        return planes;
+      },
+      this.logger,
+      {
+        op: 'PlanesService.findByReservation',
+        extras: { reservationId },
+      },
+    );
+  }
+
   // actorId = id del usuario autenticado
   update(actorId: string, id: string, dto: UpdatePlaneDto) {
     return handleRequest(

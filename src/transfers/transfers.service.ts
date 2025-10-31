@@ -111,6 +111,34 @@ export class TransfersService {
     );
   }
 
+  findByReservation(reservationId: string) {
+    return handleRequest(
+      async () => {
+        // 🚦 Validamos existencia de la reserva (mantiene consistencia con el resto de servicios)
+        const exists = await this.prisma.reservation.findUnique({
+          where: { id: reservationId },
+          select: { id: true },
+        });
+        if (!exists) {
+          throw new Error(`Reservation ${reservationId} not found`);
+        }
+
+        // 🚗 Traemos los traslados asociados a esa reserva, ordenados por fecha
+        const transfers = await this.prisma.transfer.findMany({
+          where: { reservationId },
+          orderBy: { departureDate: 'asc' },
+        });
+
+        return transfers;
+      },
+      this.logger,
+      {
+        op: 'TransfersService.findByReservation',
+        extras: { reservationId },
+      },
+    );
+  }
+
   update(actorId: string, id: string, dto: UpdateTransferDto) {
     return handleRequest(
       async () => {

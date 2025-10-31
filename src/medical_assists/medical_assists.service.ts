@@ -77,6 +77,34 @@ export class MedicalAssistsService {
     );
   }
 
+  findByReservation(reservationId: string) {
+    return handleRequest(
+      async () => {
+        // 🔍 Validamos que la reserva exista (opcional pero mantiene consistencia)
+        const exists = await this.prisma.reservation.findUnique({
+          where: { id: reservationId },
+          select: { id: true },
+        });
+        if (!exists) {
+          throw new Error(`Reservation ${reservationId} not found`);
+        }
+
+        // 🏥 Obtenemos todas las asistencias médicas asociadas a la reserva
+        const assists = await this.prisma.medicalAssist.findMany({
+          where: { reservationId },
+          orderBy: { createdAt: 'asc' },
+        });
+
+        return assists;
+      },
+      this.logger,
+      {
+        op: 'MedicalAssistsService.findByReservation',
+        extras: { reservationId },
+      },
+    );
+  }
+
   update(actorId: string, id: string, dto: UpdateMedicalAssistDto) {
     return handleRequest(
       async () => {

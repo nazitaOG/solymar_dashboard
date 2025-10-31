@@ -43,7 +43,7 @@ model User {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -57,7 +57,7 @@ model Role {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -70,7 +70,7 @@ model RoleUser {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -93,7 +93,7 @@ model Reservation {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -126,7 +126,7 @@ model Hotel {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -153,7 +153,7 @@ model Plane {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -179,7 +179,7 @@ model Cruise {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -206,7 +206,7 @@ model Transfer {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -231,7 +231,7 @@ model Excursion {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -254,7 +254,7 @@ model MedicalAssist {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -278,7 +278,7 @@ model Pax {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -295,7 +295,7 @@ model Passport {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -310,7 +310,7 @@ model Dni {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -331,7 +331,7 @@ model PaxReservation {
 
   // audit
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   createdBy String   @db.Uuid
   updatedBy String   @db.Uuid
 
@@ -358,7 +358,7 @@ model ReservationCurrencyTotal {
   amountPaid    Decimal  @default(0) @db.Decimal(18, 2)
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatetAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 

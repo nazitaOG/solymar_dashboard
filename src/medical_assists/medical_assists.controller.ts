@@ -30,6 +30,11 @@ export class MedicalAssistsController {
     return this.medicalAssistsService.findOne(id);
   }
 
+  @Get('/reservation/:id')
+  findByReservation(@Param('id') id: string) {
+    return this.medicalAssistsService.findByReservation(id);
+  }
+
   @Patch(':id')
   update(
     @GetUser() user: User,

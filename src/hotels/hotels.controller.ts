@@ -30,6 +30,11 @@ export class HotelsController {
     return this.hotelsService.findOne(id);
   }
 
+  @Get('/reservation/:id')
+  findByReservation(@Param('id', ParseUUIDPipe) id: string) {
+    return this.hotelsService.findByReservation(id);
+  }
+
   @Patch(':id')
   update(
     @GetUser() user: User,
