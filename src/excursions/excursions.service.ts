@@ -37,13 +37,6 @@ export class ExcursionsService {
               createdBy: actorId,
               updatedBy: actorId,
             },
-            select: {
-              id: true,
-              reservationId: true,
-              totalPrice: true,
-              amountPaid: true,
-              currency: true,
-            },
           });
 
           await touchReservation(tx, excursion.reservationId, actorId, {
@@ -52,7 +45,7 @@ export class ExcursionsService {
             paidAdjustment: Number(excursion.amountPaid),
           });
 
-          return { id: excursion.id };
+          return excursion;
         });
       },
       this.logger,
@@ -149,7 +142,6 @@ export class ExcursionsService {
               // NO se permite mover de reserva
               updatedBy: actorId,
             },
-            select: { id: true }, // no necesitamos repetir montos acá
           });
 
           await touchReservation(tx, current.reservationId, actorId, {

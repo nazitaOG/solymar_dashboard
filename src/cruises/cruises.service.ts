@@ -35,14 +35,14 @@ export class CruisesService {
           },
         );
 
-        CommonDatePolicies.assertUpdateRange(
+        CommonDatePolicies.assertDateRange(
           createCruiseDto,
-          { start: createCruiseDto.startDate, end: createCruiseDto.endDate },
           'startDate',
           'endDate',
           {
-            minDurationMinutes: 60,
+            required: 'any',
             allowEqual: true,
+            minDurationMinutes: 60,
             labels: { start: 'fecha de salida', end: 'fecha de llegada' },
           },
         );

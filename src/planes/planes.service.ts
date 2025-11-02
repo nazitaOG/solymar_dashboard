@@ -71,6 +71,17 @@ export class PlanesService {
               totalPrice: true,
               amountPaid: true,
               currency: true,
+              arrivalDate: true,
+              departureDate: true,
+              arrival: true,
+              departure: true,
+              provider: true,
+              notes: true,
+              bookingReference: true,
+              createdAt: true,
+              updatedAt: true,
+              createdBy: true,
+              updatedBy: true,
             },
           });
 
@@ -80,7 +91,7 @@ export class PlanesService {
             paidAdjustment: Number(created.amountPaid),
           });
 
-          return { id: created.id };
+          return created;
         });
       },
       this.logger,
@@ -212,6 +223,21 @@ export class PlanesService {
             },
             select: {
               id: true,
+              reservationId: true,
+              totalPrice: true,
+              amountPaid: true,
+              currency: true,
+              arrivalDate: true,
+              departureDate: true,
+              arrival: true,
+              departure: true,
+              provider: true,
+              notes: true,
+              bookingReference: true,
+              createdAt: true,
+              updatedAt: true,
+              createdBy: true,
+              updatedBy: true,
             },
           });
 

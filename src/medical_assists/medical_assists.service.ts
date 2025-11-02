@@ -34,13 +34,6 @@ export class MedicalAssistsService {
               createdBy: actorId,
               updatedBy: actorId,
             },
-            select: {
-              id: true,
-              reservationId: true,
-              totalPrice: true,
-              amountPaid: true,
-              currency: true,
-            },
           });
 
           await touchReservation(tx, created.reservationId, actorId, {
@@ -49,7 +42,7 @@ export class MedicalAssistsService {
             paidAdjustment: Number(created.amountPaid),
           });
 
-          return { id: created.id };
+          return created;
         });
       },
       this.logger,
@@ -139,7 +132,6 @@ export class MedicalAssistsService {
                 typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
               updatedBy: actorId,
             },
-            select: { id: true },
           });
 
           await touchReservation(tx, current.reservationId, actorId, {
