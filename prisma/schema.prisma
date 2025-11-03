@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -6,6 +5,262 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String        @id @default(uuid()) @db.Uuid
+  hashedPassword String
+  email          String        @unique
+  username       String        @unique
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now()) @db.Timestamptz(6)
+  createdBy      String        @db.Uuid
+  updatedBy      String        @db.Uuid
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(6)
+  reservations   Reservation[]
+  roleUsers      RoleUser[]
+}
+
+model Role {
+  id          String     @id @default(uuid()) @db.Uuid
+  description String     @unique
+  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
+  createdBy   String     @db.Uuid
+  updatedBy   String     @db.Uuid
+  updatedAt   DateTime   @updatedAt @db.Timestamptz(6)
+  roleUsers   RoleUser[]
+}
+
+model RoleUser {
+  roleId    String   @db.Uuid
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdBy String   @db.Uuid
+  updatedBy String   @db.Uuid
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, userId])
+}
+
+model Reservation {
+  id              String                     @id @default(uuid()) @db.Uuid
+  userId          String                     @db.Uuid
+  state           ReservationState           @default(PENDING)
+  createdAt       DateTime                   @default(now()) @db.Timestamptz(6)
+  createdBy       String                     @db.Uuid
+  updatedBy       String                     @db.Uuid
+  updatedAt       DateTime                   @updatedAt @db.Timestamptz(6)
+  cruises         Cruise[]
+  excursions      Excursion[]
+  hotels          Hotel[]
+  medicalAssists  MedicalAssist[]
+  paxReservations PaxReservation[]
+  planes          Plane[]
+  user            User                       @relation(fields: [userId], references: [id])
+  currencyTotals  ReservationCurrencyTotal[]
+  transfers       Transfer[]
+}
+
+model Hotel {
+  id               String      @id @default(uuid()) @db.Uuid
+  startDate        DateTime
+  endDate          DateTime
+  city             String      @db.VarChar(128)
+  hotelName        String      @db.VarChar(255)
+  bookingReference String      @db.VarChar(255)
+  totalPrice       Decimal     @db.Decimal(18, 2)
+  amountPaid       Decimal     @db.Decimal(18, 2)
+  roomType         String      @db.VarChar(255)
+  provider         String      @db.VarChar(128)
+  reservationId    String      @db.Uuid
+  createdAt        DateTime    @default(now()) @db.Timestamptz(6)
+  createdBy        String      @db.Uuid
+  updatedBy        String      @db.Uuid
+  currency         Currency
+  updatedAt        DateTime    @updatedAt @db.Timestamptz(6)
+  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+  @@index([currency])
+}
+
+model Plane {
+  id               String      @id @default(uuid()) @db.Uuid
+  departure        String      @db.VarChar(128)
+  arrival          String?     @db.VarChar(128)
+  departureDate    DateTime
+  arrivalDate      DateTime?
+  totalPrice       Decimal     @db.Decimal(18, 2)
+  amountPaid       Decimal     @db.Decimal(18, 2)
+  bookingReference String      @db.VarChar(255)
+  provider         String?     @db.VarChar(128)
+  reservationId    String      @db.Uuid
+  notes            String?
+  createdAt        DateTime    @default(now()) @db.Timestamptz(6)
+  createdBy        String      @db.Uuid
+  updatedBy        String      @db.Uuid
+  currency         Currency
+  updatedAt        DateTime    @updatedAt @db.Timestamptz(6)
+  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+  @@index([currency])
+}
+
+model Cruise {
+  id               String      @id @default(uuid()) @db.Uuid
+  startDate        DateTime
+  bookingReference String?     @db.VarChar(255)
+  provider         String      @db.VarChar(128)
+  embarkationPort  String      @db.VarChar(128)
+  arrivalPort      String?     @db.VarChar(128)
+  totalPrice       Decimal     @db.Decimal(18, 2)
+  amountPaid       Decimal     @db.Decimal(18, 2)
+  reservationId    String      @db.Uuid
+  endDate          DateTime?
+  createdAt        DateTime    @default(now()) @db.Timestamptz(6)
+  createdBy        String      @db.Uuid
+  updatedBy        String      @db.Uuid
+  currency         Currency
+  updatedAt        DateTime    @updatedAt @db.Timestamptz(6)
+  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+  @@index([currency])
+}
+
+model Transfer {
+  id               String        @id @default(uuid()) @db.Uuid
+  provider         String        @db.VarChar(128)
+  reservationId    String        @db.Uuid
+  totalPrice       Decimal       @db.Decimal(18, 2)
+  amountPaid       Decimal       @db.Decimal(18, 2)
+  arrivalDate      DateTime
+  departureDate    DateTime
+  destination      String?       @db.VarChar(128)
+  origin           String        @db.VarChar(128)
+  transportType    TransportType @default(PICKUP)
+  bookingReference String?       @db.VarChar(128)
+  createdAt        DateTime      @default(now()) @db.Timestamptz(6)
+  createdBy        String        @db.Uuid
+  updatedBy        String        @db.Uuid
+  currency         Currency
+  updatedAt        DateTime      @updatedAt @db.Timestamptz(6)
+  reservation      Reservation   @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+  @@index([currency])
+}
+
+model Excursion {
+  id               String      @id @default(uuid()) @db.Uuid
+  totalPrice       Decimal     @db.Decimal(18, 2)
+  amountPaid       Decimal     @db.Decimal(18, 2)
+  provider         String      @db.VarChar(128)
+  excursionDate    DateTime
+  excursionName    String      @db.VarChar(255)
+  reservationId    String      @db.Uuid
+  origin           String      @db.VarChar(128)
+  bookingReference String?     @db.VarChar(128)
+  createdAt        DateTime    @default(now()) @db.Timestamptz(6)
+  createdBy        String      @db.Uuid
+  updatedBy        String      @db.Uuid
+  currency         Currency
+  updatedAt        DateTime    @updatedAt @db.Timestamptz(6)
+  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+  @@index([currency])
+}
+
+model MedicalAssist {
+  id               String      @id @default(uuid()) @db.Uuid
+  totalPrice       Decimal     @db.Decimal(18, 2)
+  amountPaid       Decimal     @db.Decimal(18, 2)
+  bookingReference String      @db.VarChar(255)
+  assistType       String?     @db.VarChar(128)
+  provider         String      @db.VarChar(128)
+  reservationId    String      @db.Uuid
+  createdAt        DateTime    @default(now()) @db.Timestamptz(6)
+  createdBy        String      @db.Uuid
+  updatedBy        String      @db.Uuid
+  currency         Currency
+  updatedAt        DateTime    @updatedAt @db.Timestamptz(6)
+  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+  @@index([currency])
+}
+
+model Pax {
+  id              String           @id @default(uuid()) @db.Uuid
+  name            String
+  birthDate       DateTime
+  nationality     String
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  createdBy       String           @db.Uuid
+  updatedBy       String           @db.Uuid
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
+  dni             Dni?
+  passport        Passport?
+  paxReservations PaxReservation[]
+}
+
+model Passport {
+  id             String   @id @default(uuid()) @db.Uuid
+  passportNum    String   @unique
+  expirationDate DateTime
+  paxId          String   @unique @db.Uuid
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  createdBy      String   @db.Uuid
+  updatedBy      String   @db.Uuid
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+  pax            Pax      @relation(fields: [paxId], references: [id], onDelete: Cascade)
+}
+
+model Dni {
+  id             String   @id @default(uuid()) @db.Uuid
+  dniNum         String   @unique
+  expirationDate DateTime
+  paxId          String   @unique @db.Uuid
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  createdBy      String   @db.Uuid
+  updatedBy      String   @db.Uuid
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+  pax            Pax      @relation(fields: [paxId], references: [id], onDelete: Cascade)
+}
+
+model PaxReservation {
+  id            String      @id @default(uuid()) @db.Uuid
+  paxId         String      @db.Uuid
+  reservationId String      @db.Uuid
+  createdAt     DateTime    @default(now()) @db.Timestamptz(6)
+  createdBy     String      @db.Uuid
+  updatedBy     String      @db.Uuid
+  updatedAt     DateTime    @updatedAt @db.Timestamptz(6)
+  pax           Pax         @relation(fields: [paxId], references: [id], onDelete: Cascade)
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@unique([paxId, reservationId])
+  @@index([reservationId])
+  @@index([paxId])
+}
+
+model ReservationCurrencyTotal {
+  id            String      @id @default(uuid()) @db.Uuid
+  reservationId String      @db.Uuid
+  currency      Currency
+  totalPrice    Decimal     @default(0) @db.Decimal(18, 2)
+  amountPaid    Decimal     @default(0) @db.Decimal(18, 2)
+  createdAt     DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @db.Timestamptz(6)
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@unique([reservationId, currency])
+  @@index([reservationId])
+  @@index([currency])
 }
 
 enum ReservationState {
@@ -25,344 +280,4 @@ enum TransportType {
 enum Currency {
   USD
   ARS
-  // posibilidad de extender
-}
-
-/**
- * =========================
- * USUARIOS / ROLES (M2M)
- * =========================
- */
-
-model User {
-  id             String  @id @default(uuid()) @db.Uuid
-  hashedPassword String
-  email          String  @unique
-  username       String  @unique
-  isActive       Boolean @default(true)
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  reservations Reservation[]
-  roleUsers    RoleUser[]
-}
-
-model Role {
-  id          String @id @default(uuid()) @db.Uuid
-  description String @unique
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  roleUsers RoleUser[]
-}
-
-model RoleUser {
-  roleId String @db.Uuid
-  userId String @db.Uuid
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([roleId, userId]) // PK compuesta
-}
-
-/**
- * =========================
- * RESERVAS E ITEMS
- * =========================
- */
-
-model Reservation {
-  id     String           @id @default(uuid()) @db.Uuid
-  userId String           @db.Uuid
-  state  ReservationState @default(PENDING)
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  user            User             @relation(fields: [userId], references: [id], onDelete: Restrict)
-  hotels          Hotel[]
-  planes          Plane[]
-  cruises         Cruise[]
-  transfers       Transfer[]
-  excursions      Excursion[]
-  medicalAssists  MedicalAssist[]
-  paxReservations PaxReservation[]
-
-  currencyTotals  ReservationCurrencyTotal[]
-}
-
-model Hotel {
-  id               String   @id @default(uuid()) @db.Uuid
-  startDate        DateTime
-  endDate          DateTime
-  city             String   @db.VarChar(128)
-  hotelName        String   @db.VarChar(255)
-  bookingReference String   @db.VarChar(255)
-  totalPrice       Decimal  @db.Decimal(18, 2)
-  amountPaid       Decimal  @db.Decimal(18, 2)
-  roomType         String   @db.VarChar(255)
-  provider         String   @db.VarChar(128)
-  reservationId    String   @db.Uuid
-
-  currency         Currency
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-
-  @@index([reservationId])
-  @@index([currency])
-}
-
-model Plane {
-  id               String    @id @default(uuid()) @db.Uuid
-  departure        String    @db.VarChar(128)
-  arrival          String?   @db.VarChar(128)
-  departureDate    DateTime
-  arrivalDate      DateTime?
-  totalPrice       Decimal   @db.Decimal(18, 2)
-  amountPaid       Decimal   @db.Decimal(18, 2)
-  bookingReference String    @db.VarChar(255)
-  provider         String?   @db.VarChar(128)
-  notes            String?   @db.Text
-  reservationId    String    @db.Uuid
-
-  currency         Currency
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-
-  @@index([reservationId])
-  @@index([currency])
-}
-
-model Cruise {
-  id               String    @id @default(uuid()) @db.Uuid
-  startDate        DateTime
-  endDate          DateTime?
-  bookingReference String?   @db.VarChar(255)
-  provider         String    @db.VarChar(128)
-  embarkationPort  String    @db.VarChar(128)
-  arrivalPort      String?   @db.VarChar(128)
-  totalPrice       Decimal   @db.Decimal(18, 2)
-  amountPaid       Decimal   @db.Decimal(18, 2)
-  reservationId    String    @db.Uuid
-
-  currency         Currency
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-
-  @@index([reservationId])
-  @@index([currency])
-}
-
-model Transfer {
-  id               String        @id @default(uuid()) @db.Uuid
-  origin           String        @db.VarChar(128)
-  destination      String?       @db.VarChar(128)
-  departureDate    DateTime
-  bookingReference String?       @db.VarChar(128)
-  arrivalDate      DateTime
-  provider         String        @db.VarChar(128)
-  reservationId    String        @db.Uuid
-  totalPrice       Decimal       @db.Decimal(18, 2)
-  amountPaid       Decimal       @db.Decimal(18, 2)
-  transportType    TransportType @default(PICKUP)
-
-  currency         Currency
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-
-  @@index([reservationId])
-  @@index([currency])
-}
-
-model Excursion {
-  id               String   @id @default(uuid()) @db.Uuid
-  totalPrice       Decimal  @db.Decimal(18, 2)
-  amountPaid       Decimal  @db.Decimal(18, 2)
-  origin           String   @db.VarChar(128)
-  provider         String   @db.VarChar(128)
-  bookingReference String?  @db.VarChar(128)
-  excursionDate    DateTime
-  excursionName    String   @db.VarChar(255)
-  reservationId    String   @db.Uuid
-
-  currency         Currency
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-
-  @@index([reservationId])
-  @@index([currency])
-}
-
-model MedicalAssist {
-  id               String  @id @default(uuid()) @db.Uuid
-  totalPrice       Decimal @db.Decimal(18, 2)
-  amountPaid       Decimal @db.Decimal(18, 2)
-  bookingReference String  @db.VarChar(255)
-  assistType       String? @db.VarChar(128)
-  provider         String  @db.VarChar(128)
-  reservationId    String  @db.Uuid
-
-  currency         Currency
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-
-  @@index([reservationId])
-  @@index([currency])
-}
-
-/**
- * =========================
- * PAX / DOCUMENTOS (1–1)
- * =========================
- */
-
-model Pax {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String
-  birthDate   DateTime
-  nationality String
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  passport Passport?
-  dni      Dni?
-
-  paxReservations PaxReservation[]
-}
-
-model Passport {
-  id             String   @id @default(uuid()) @db.Uuid
-  passportNum    String   @unique
-  expirationDate DateTime
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  paxId String @unique @db.Uuid
-  pax   Pax    @relation(fields: [paxId], references: [id], onDelete: Cascade)
-}
-
-model Dni {
-  id             String   @id @default(uuid()) @db.Uuid
-  dniNum         String   @unique
-  expirationDate DateTime
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  paxId String @unique @db.Uuid
-  pax   Pax    @relation(fields: [paxId], references: [id], onDelete: Cascade)
-}
-
-/**
- * =========================
- * JOIN PAX <-> RESERVATION
- * =========================
- */
-
-model PaxReservation {
-  id            String @id @default(uuid()) @db.Uuid
-  paxId         String @db.Uuid
-  reservationId String @db.Uuid
-
-  // audit
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
-
-  pax         Pax         @relation(fields: [paxId], references: [id], onDelete: Cascade)
-  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-
-  @@unique([paxId, reservationId])
-  @@index([reservationId])
-  @@index([paxId])
-}
-
-/**
- * =========================
- * TOTALES POR MONEDA
- * =========================
- */
-
-model ReservationCurrencyTotal {
-  id            String   @id @default(uuid()) @db.Uuid
-  reservationId String   @db.Uuid
-  currency      Currency
-
-  totalPrice    Decimal  @default(0) @db.Decimal(18, 2)
-  amountPaid    Decimal  @default(0) @db.Decimal(18, 2)
-
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-
-  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-
-  @@unique([reservationId, currency])
-  @@index([reservationId])
-  @@index([currency])
 }
