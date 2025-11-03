@@ -8,6 +8,7 @@ import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { NestStructuredLogger } from '../common/logging/structured-logger';
+import { Currency } from '@prisma/client';
 
 export type FindAllReservationsParams = {
   paxId?: string; // filtra reservas que incluyan a este PAX
@@ -44,7 +45,7 @@ export class ReservationsService {
           // Crear reserva + join a pax (sellos en todas las filas)
           const res = await tx.reservation.create({
             data: {
-              userId: dto.userId,
+              userId: dto.userId ?? actorId, // si no viene, usa el actorId
               state: dto.state,
               createdBy: actorId,
               updatedBy: actorId,
@@ -53,6 +54,13 @@ export class ReservationsService {
                   pax: { connect: { id: paxId } },
                   createdBy: actorId,
                   updatedBy: actorId,
+                })),
+              },
+              currencyTotals: {
+                create: Object.values(Currency).map((currency) => ({
+                  currency,
+                  totalPrice: 0,
+                  amountPaid: 0,
                 })),
               },
             },

@@ -1,9 +1,16 @@
-import { IsUUID, IsEnum, ArrayMinSize, IsArray } from 'class-validator';
+import {
+  IsUUID,
+  IsEnum,
+  ArrayMinSize,
+  IsArray,
+  IsOptional,
+} from 'class-validator';
 import { ReservationState } from '../../common/enums/reservation-state.enum';
 
 export class CreateReservationDto {
+  @IsOptional()
   @IsUUID()
-  userId: string;
+  userId?: string; // opcional porque el backend lo rellenará
 
   @IsEnum(ReservationState)
   state: ReservationState;

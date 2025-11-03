@@ -24,6 +24,7 @@ export class ReservationsController {
 
   @Post()
   create(@GetUser() user: User, @Body() dto: CreateReservationDto) {
+    dto.userId = user.id; // fuerza que el userId del body sea siempre el del token
     return this.reservationsService.create(user.id, dto);
   }
 
