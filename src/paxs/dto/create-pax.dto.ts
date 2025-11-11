@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsDate,
   IsString,
   Matches,
@@ -11,7 +12,9 @@ import { ToDateDay } from '../../common/decorators/date.decorators';
 import { ToTrim, ToUpperTrim } from '../../common/decorators/string.decorators';
 
 export class CreatePaxDto {
-  // TRANSFORMACIONES PRIMERO
+  // ------------------------
+  // DATOS BÁSICOS
+  // ------------------------
   @ToTrim()
   @IsString()
   @IsNotEmpty()
@@ -29,8 +32,10 @@ export class CreatePaxDto {
   @IsNotEmpty()
   nationality!: string;
 
-  // PASAPORTE (requerido si NO viene DNI)
-  @ValidateIf((o: CreatePaxDto) => !o.dniNum)
+  // ------------------------
+  // PASAPORTE (requerido si no hay DNI)
+  // ------------------------
+  @ValidateIf((o: CreatePaxDto) => !o.dniNum) // solo se exige si no hay dni
   @ToUpperTrim()
   @IsString()
   @IsNotEmpty()
@@ -40,14 +45,18 @@ export class CreatePaxDto {
   @MaxLength(128)
   passportNum?: string;
 
-  @ValidateIf((o: CreatePaxDto) => !o.dniNum)
-  @Type(() => Date)
-  @ToDateDay()
-  @IsDate()
-  passportExpirationDate?: Date;
+  // 🔸 Fecha opcional, pero SOLO si hay passportNum
+  // Si no hay pasaporte, no se valida ni se acepta
+  @ValidateIf(
+    (o: CreatePaxDto) => !!o.passportNum && !!o.passportExpirationDate,
+  )
+  @IsDateString()
+  passportExpirationDate?: string;
 
-  // DNI (requerido si NO viene PASAPORTE)
-  @ValidateIf((o: CreatePaxDto) => !o.passportNum)
+  // ------------------------
+  // DNI (requerido si no hay pasaporte)
+  // ------------------------
+  @ValidateIf((o: CreatePaxDto) => !o.passportNum) // solo se exige si no hay pasaporte
   @ToTrim()
   @IsString()
   @IsNotEmpty()
@@ -55,9 +64,9 @@ export class CreatePaxDto {
   @MaxLength(128)
   dniNum?: string;
 
-  @ValidateIf((o: CreatePaxDto) => !o.passportNum)
-  @Type(() => Date)
-  @ToDateDay()
-  @IsDate()
-  dniExpirationDate?: Date;
+  // 🔸 Fecha opcional, pero SOLO si hay dniNum
+  // Si no hay DNI, no se valida ni se acepta
+  @ValidateIf((o: CreatePaxDto) => !!o.dniNum && !!o.dniExpirationDate)
+  @IsDateString()
+  dniExpirationDate?: string;
 }

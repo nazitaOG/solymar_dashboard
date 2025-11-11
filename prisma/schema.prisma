@@ -211,7 +211,7 @@ model Pax {
 model Passport {
   id             String   @id @default(uuid()) @db.Uuid
   passportNum    String   @unique
-  expirationDate DateTime
+  expirationDate DateTime?
   paxId          String   @unique @db.Uuid
   createdAt      DateTime @default(now()) @db.Timestamptz(6)
   createdBy      String   @db.Uuid
@@ -223,7 +223,7 @@ model Passport {
 model Dni {
   id             String   @id @default(uuid()) @db.Uuid
   dniNum         String   @unique
-  expirationDate DateTime
+  expirationDate DateTime?
   paxId          String   @unique @db.Uuid
   createdAt      DateTime @default(now()) @db.Timestamptz(6)
   createdBy      String   @db.Uuid

@@ -4,7 +4,7 @@ import { UpdatePaxDto } from './dto/update-pax.dto';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { PaxPolicies } from './policies/pax.policies';
-import { providedPair } from '../common/utils/value-guards';
+import { hasPrimary } from '../common/utils/value-guards';
 import { NestStructuredLogger } from '../common/logging/structured-logger';
 
 @Injectable()
@@ -15,23 +15,26 @@ export class PaxService {
 
   // actorId = id del usuario autenticado
   create(actorId: string, dto: CreatePaxDto) {
+    const hasPassport = hasPrimary(dto.passportNum, dto.passportExpirationDate);
+    const hasDni = hasPrimary(dto.dniNum, dto.dniExpirationDate);
+
     return handleRequest(
-      () => {
+      async () => {
         PaxPolicies.assertCreate(dto);
 
-        const hasPassport = providedPair(
-          dto.passportNum,
-          dto.passportExpirationDate,
-        );
-        const hasDni = providedPair(dto.dniNum, dto.dniExpirationDate);
+        // Seguridad adicional
+        if (!hasPassport && !hasDni) {
+          throw new BadRequestException(
+            'Debe ingresar al menos un documento (DNI o Pasaporte).',
+          );
+        }
 
         return this.prisma.pax.create({
           data: {
             name: dto.name,
             birthDate: new Date(dto.birthDate),
-            nationality: dto.nationality,
+            nationality: dto.nationality.toUpperCase(),
 
-            // sellos del nuevo esquema
             createdBy: actorId,
             updatedBy: actorId,
 
@@ -39,7 +42,11 @@ export class PaxService {
               ? {
                   create: {
                     passportNum: dto.passportNum,
-                    expirationDate: new Date(dto.passportExpirationDate),
+                    expirationDate:
+                      dto.dniExpirationDate &&
+                      dto.dniExpirationDate.trim() !== ''
+                        ? new Date(dto.dniExpirationDate)
+                        : null,
                     createdBy: actorId,
                     updatedBy: actorId,
                   },
@@ -50,7 +57,11 @@ export class PaxService {
               ? {
                   create: {
                     dniNum: dto.dniNum,
-                    expirationDate: new Date(dto.dniExpirationDate),
+                    expirationDate:
+                      dto.dniExpirationDate &&
+                      dto.dniExpirationDate.trim() !== ''
+                        ? new Date(dto.dniExpirationDate)
+                        : null,
                     createdBy: actorId,
                     updatedBy: actorId,
                   },
@@ -64,10 +75,9 @@ export class PaxService {
       {
         op: 'PaxService.create',
         actorId,
-        // Evitar PII sensible en logs; logueamos flags y tipos
         extras: {
-          hasPassport: Boolean(dto.passportNum && dto.passportExpirationDate),
-          hasDni: Boolean(dto.dniNum && dto.dniExpirationDate),
+          hasPassport,
+          hasDni,
           nationality: dto.nationality,
         },
       },
