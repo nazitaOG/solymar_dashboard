@@ -11,6 +11,7 @@ import { Type } from 'class-transformer';
 import { ToDateDay } from '../../common/decorators/date.decorators';
 import { ToTrim, ToUpperTrim } from '../../common/decorators/string.decorators';
 import { IsFutureOrToday } from '../validators/is-future-or-today.validator';
+import { IsPastOrWithinNineMonths } from '../validators/is-past-or-nine-months-forward.validator';
 
 export class CreatePaxDto {
   // ------------------------
@@ -25,6 +26,7 @@ export class CreatePaxDto {
   @Type(() => Date)
   @ToDateDay()
   @IsDate()
+  @IsPastOrWithinNineMonths()
   birthDate!: Date;
 
   @ToUpperTrim()
