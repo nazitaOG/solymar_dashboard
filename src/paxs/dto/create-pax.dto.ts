@@ -10,6 +10,7 @@ import {
 import { Type } from 'class-transformer';
 import { ToDateDay } from '../../common/decorators/date.decorators';
 import { ToTrim, ToUpperTrim } from '../../common/decorators/string.decorators';
+import { IsFutureOrToday } from '../validators/is-future-or-today.validator';
 
 export class CreatePaxDto {
   // ------------------------
@@ -51,6 +52,7 @@ export class CreatePaxDto {
     (o: CreatePaxDto) => !!o.passportNum && !!o.passportExpirationDate,
   )
   @IsDateString()
+  @IsFutureOrToday()
   passportExpirationDate?: string;
 
   // ------------------------
@@ -68,5 +70,6 @@ export class CreatePaxDto {
   // Si no hay DNI, no se valida ni se acepta
   @ValidateIf((o: CreatePaxDto) => !!o.dniNum && !!o.dniExpirationDate)
   @IsDateString()
+  @IsFutureOrToday()
   dniExpirationDate?: string;
 }
