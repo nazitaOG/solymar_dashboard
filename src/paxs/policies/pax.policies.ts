@@ -1,16 +1,25 @@
 import { BadRequestException } from '@nestjs/common';
 import { CreatePaxDto } from '../dto/create-pax.dto';
 import { UpdatePaxDto } from '../dto/update-pax.dto';
-import { isProvided } from '../../common/utils/value-guards';
 
+/**
+ * Reglas de negocio (políticas) para pasajeros.
+ *
+ * 📌 Responsabilidad:
+ *  - Validar coherencia entre pares de campos (número ↔ fecha).
+ *  - Verificar presencia mínima de documentos.
+ *  - NO valida formato: eso lo hace el DTO mediante class-validator.
+ */
 export class PaxPolicies {
   // ----------------------------------------------------
   // Puntos de entrada principales
   // ----------------------------------------------------
+  /** Valida reglas al crear un pasajero. */
   public static assertCreate(dto: CreatePaxDto) {
     this.assertDocs(dto, { requireAtLeastOne: true });
   }
 
+  /** Valida reglas al actualizar un pasajero. */
   public static assertUpdate(dto: UpdatePaxDto) {
     this.assertDocs(dto, { requireAtLeastOne: false });
   }
@@ -22,21 +31,26 @@ export class PaxPolicies {
     dto: Partial<CreatePaxDto | UpdatePaxDto>,
     opts: { requireAtLeastOne: boolean },
   ) {
-    // Se considera "quiere documento" si hay número o fecha (aunque sea null)
+    // Se considera “quiere documento” si hay número o fecha (aunque sea null)
     const wantsPassport =
-      isProvided(dto.passportNum) || isProvided(dto.passportExpirationDate);
+      this.isProvided(dto.passportNum) ||
+      this.isProvided(dto.passportExpirationDate);
 
     const wantsDni =
-      isProvided(dto.dniNum) || isProvided(dto.dniExpirationDate);
+      this.isProvided(dto.dniNum) || this.isProvided(dto.dniExpirationDate);
 
-    // Debe tener al menos un documento (solo en create)
+    // ------------------------------------------------
+    // Reglas de negocio globales
+    // ------------------------------------------------
+
+    // 🔹 Debe tener al menos un documento (solo en create)
     if (opts.requireAtLeastOne && !wantsPassport && !wantsDni) {
       throw new BadRequestException(
         'El pasajero debe tener al menos un documento (DNI o Pasaporte).',
       );
     }
 
-    // Coherencia interna de cada documento
+    // 🔹 Coherencia interna de cada documento
     this.ensurePairIfAny(
       'Pasaporte',
       dto.passportNum,
@@ -44,10 +58,7 @@ export class PaxPolicies {
     );
     this.ensurePairIfAny('DNI', dto.dniNum, dto.dniExpirationDate);
 
-    // Validación extra: formato del DNI
-    if (isProvided(dto.dniNum) && !/^\d{8}$/.test(dto.dniNum)) {
-      throw new BadRequestException('DNI: el número debe tener 8 dígitos.');
-    }
+    // ❌ NO se valida formato de DNI acá — eso ya lo hace el DTO
   }
 
   // ----------------------------------------------------
@@ -82,7 +93,10 @@ export class PaxPolicies {
   // ----------------------------------------------------
   // Helper genérico
   // ----------------------------------------------------
-  /** Determina si un valor fue realmente provisto (descarta null, undefined o string vacío). */
+  /**
+   * Determina si un valor fue realmente provisto
+   * (descarta null, undefined o string vacío).
+   */
   private static isProvided<T>(v: T | null | undefined): v is T {
     return v !== null && v !== undefined && v !== ('' as unknown as T);
   }

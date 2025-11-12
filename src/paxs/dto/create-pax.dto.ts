@@ -12,6 +12,7 @@ import { ToDateDay } from '../../common/decorators/date.decorators';
 import { ToTrim, ToUpperTrim } from '../../common/decorators/string.decorators';
 import { IsFutureOrToday } from '../validators/is-future-or-today.validator';
 import { IsPastOrWithinNineMonths } from '../validators/is-past-or-nine-months-forward.validator';
+import { IsValidNationalId } from '../validators/is-valid-national-id.validator';
 
 export class CreatePaxDto {
   // ------------------------
@@ -64,8 +65,7 @@ export class CreatePaxDto {
   @ToTrim()
   @IsString()
   @IsNotEmpty()
-  @Matches(/^\d{8}$/, { message: 'DNI: debe tener exactamente 8 dígitos' })
-  @MaxLength(128)
+  @IsValidNationalId()
   dniNum?: string;
 
   // 🔸 Fecha opcional, pero SOLO si hay dniNum
