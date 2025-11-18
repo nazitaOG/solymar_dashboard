@@ -208,16 +208,10 @@ export class PlanesService {
               updatedBy: actorId,
               // currency NOT updatable — DTO lo permite pero el model no
             },
-            select: {
-              id: true,
-              reservationId: true,
-              totalPrice: true,
-              amountPaid: true,
-              currency: true,
-              createdAt: true,
-              updatedAt: true,
-              createdBy: true,
-              updatedBy: true,
+            include: {
+              segments: {
+                orderBy: { segmentOrder: 'asc' },
+              },
             },
           });
 
