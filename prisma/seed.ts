@@ -250,7 +250,7 @@ async function main(): Promise<void> {
       provider: 'Shuttle Co.',
       totalPrice: new Prisma.Decimal('5000.00'),
       amountPaid: new Prisma.Decimal('5000.00'),
-      transportType: TransportType.PICKUP,
+      transportType: TransportType.TRANSFER,
       currency: Currency.ARS,
       createdBy: SYSTEM_ID,
       updatedBy: SYSTEM_ID,

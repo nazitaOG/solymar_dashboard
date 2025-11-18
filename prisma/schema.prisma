@@ -46,6 +46,8 @@ model RoleUser {
 
 model Reservation {
   id              String                     @id @default(uuid()) @db.Uuid
+  code            Int                        @unique @default(autoincrement())
+  name            String                     @default("RES")
   userId          String                     @db.Uuid
   state           ReservationState           @default(PENDING)
   createdAt       DateTime                   @default(now()) @db.Timestamptz(6)
