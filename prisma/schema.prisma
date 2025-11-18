@@ -115,8 +115,8 @@ model PlaneSegment {
   planeId       String   @db.Uuid
   segmentOrder  Int
 
-  departure     String   @db.VarChar(128)
-  arrival       String   @db.VarChar(128)
+  departure     String   @db.VarChar(3)
+  arrival       String   @db.VarChar(3)
   departureDate DateTime
   arrivalDate   DateTime
 
