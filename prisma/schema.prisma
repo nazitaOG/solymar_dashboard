@@ -88,26 +88,53 @@ model Hotel {
 
 model Plane {
   id               String      @id @default(uuid()) @db.Uuid
-  departure        String      @db.VarChar(128)
-  arrival          String?     @db.VarChar(128)
-  departureDate    DateTime
-  arrivalDate      DateTime?
   totalPrice       Decimal     @db.Decimal(18, 2)
   amountPaid       Decimal     @db.Decimal(18, 2)
   bookingReference String      @db.VarChar(255)
   provider         String?     @db.VarChar(128)
   reservationId    String      @db.Uuid
   notes            String?
+  currency         Currency
+
   createdAt        DateTime    @default(now()) @db.Timestamptz(6)
   createdBy        String      @db.Uuid
   updatedBy        String      @db.Uuid
-  currency         Currency
   updatedAt        DateTime    @updatedAt @db.Timestamptz(6)
+
   reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  segments         PlaneSegment[]
 
   @@index([reservationId])
   @@index([currency])
 }
+
+
+model PlaneSegment {
+  id            String   @id @default(uuid()) @db.Uuid
+  planeId       String   @db.Uuid
+  segmentOrder  Int
+
+  departure     String   @db.VarChar(128)
+  arrival       String   @db.VarChar(128)
+  departureDate DateTime
+  arrivalDate   DateTime
+
+  airline       String?  @db.VarChar(128)
+  flightNumber  String?  @db.VarChar(64)
+
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  createdBy     String   @db.Uuid
+  updatedBy     String   @db.Uuid
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+
+  plane         Plane    @relation(fields: [planeId], references: [id], onDelete: Cascade)
+
+  @@index([planeId])
+  @@index([segmentOrder])
+}
+
+
 
 model Cruise {
   id               String      @id @default(uuid()) @db.Uuid

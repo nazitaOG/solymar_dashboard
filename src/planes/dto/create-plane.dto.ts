@@ -1,5 +1,4 @@
 import {
-  IsDate,
   IsNumber,
   IsString,
   Max,
@@ -9,36 +8,15 @@ import {
   IsNotEmpty,
   MaxLength,
   IsEnum,
+  ValidateNested,
+  ArrayMinSize,
 } from 'class-validator';
-import { ToDateMinute } from '../../common/decorators/date.decorators';
+import { ToTrim } from '../../common/decorators/string.decorators';
 import { Type } from 'class-transformer';
-import { ToTrim, ToUpperTrim } from '../../common/decorators/string.decorators';
 import { Currency } from '@prisma/client';
+import { CreatePlaneSegmentDto } from './create-plane-segment.dto';
 
 export class CreatePlaneDto {
-  @ToUpperTrim()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(128)
-  departure: string;
-
-  @ToUpperTrim()
-  @IsString()
-  @IsOptional()
-  @MaxLength(128)
-  arrival?: string;
-
-  @Type(() => Date)
-  @ToDateMinute()
-  @IsDate()
-  departureDate: Date;
-
-  @Type(() => Date)
-  @ToDateMinute()
-  @IsDate()
-  @IsOptional()
-  arrivalDate?: Date;
-
   @ToTrim()
   @IsString()
   @IsNotEmpty()
@@ -74,4 +52,10 @@ export class CreatePlaneDto {
 
   @IsUUID()
   reservationId: string;
+
+  // Aquí vienen los tramos del vuelo
+  @ValidateNested({ each: true })
+  @Type(() => CreatePlaneSegmentDto)
+  @ArrayMinSize(1)
+  segments: CreatePlaneSegmentDto[];
 }

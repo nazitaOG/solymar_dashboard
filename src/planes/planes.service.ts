@@ -1,14 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreatePlaneDto } from './dto/create-plane.dto';
 import { UpdatePlaneDto } from './dto/update-plane.dto';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
-import { CommonDatePolicies } from '../common/policies/date.policies';
-import { CommonOriginDestinationPolicies } from '../common/policies/origin-destination.policies';
 import { CommonPricePolicies } from '../common/policies/price.policies';
 import { PrismaClient } from '@prisma/client';
 import { touchReservation } from '../common/db/touch-reservation.db';
 import { NestStructuredLogger } from '../common/logging/structured-logger';
+import { PlaneSegmentPolicies } from './policies/plane-segment.policies';
 
 @Injectable()
 export class PlanesService {
@@ -20,48 +19,24 @@ export class PlanesService {
   create(actorId: string, dto: CreatePlaneDto) {
     return handleRequest(
       async () => {
-        CommonOriginDestinationPolicies.assertCreateDifferent(
-          dto,
-          'departure',
-          'arrival',
-          {
-            required: 'any',
-            labels: { a: 'salida', b: 'llegada' },
-            ignoreCase: true,
-            trim: true,
-          },
-        );
-
-        CommonDatePolicies.assertUpdateRange(
-          dto,
-          { start: dto.departureDate, end: dto.arrivalDate },
-          'departureDate',
-          'arrivalDate',
-          {
-            minDurationMinutes: 60,
-            allowEqual: true,
-            labels: { start: 'fecha de salida', end: 'fecha de llegada' },
-          },
-        );
-
+        // 1. Política de precios
         CommonPricePolicies.assertCreatePrice(dto, 'totalPrice', 'amountPaid', {
           labels: { total: 'total', paid: 'pagado' },
         });
+        // 2. Política de segmentos
+        PlaneSegmentPolicies.assertValidSegments(dto.segments);
 
         return this.prisma.$transaction(async (tx: PrismaClient) => {
-          const created = await tx.plane.create({
+          // 3. Crear el vuelo (sin info de tramo)
+          const plane = await tx.plane.create({
             data: {
-              departure: dto.departure,
-              arrival: dto.arrival ?? undefined,
-              departureDate: dto.departureDate,
-              arrivalDate: dto.arrivalDate ?? undefined,
+              reservationId: dto.reservationId,
               bookingReference: dto.bookingReference,
               provider: dto.provider ?? undefined,
               totalPrice: dto.totalPrice,
               amountPaid: dto.amountPaid,
               currency: dto.currency,
               notes: dto.notes ?? undefined,
-              reservationId: dto.reservationId,
               createdBy: actorId,
               updatedBy: actorId,
             },
@@ -71,42 +46,52 @@ export class PlanesService {
               totalPrice: true,
               amountPaid: true,
               currency: true,
-              arrivalDate: true,
-              departureDate: true,
-              arrival: true,
-              departure: true,
-              provider: true,
-              notes: true,
-              bookingReference: true,
               createdAt: true,
               updatedAt: true,
-              createdBy: true,
-              updatedBy: true,
+              bookingReference: true,
+              provider: true,
+              notes: true,
             },
           });
 
-          await touchReservation(tx, created.reservationId, actorId, {
-            currency: created.currency,
-            totalAdjustment: Number(created.totalPrice),
-            paidAdjustment: Number(created.amountPaid),
+          // 4. Insertar segmentos
+          await tx.planeSegment.createMany({
+            data: dto.segments.map((seg, i) => ({
+              planeId: plane.id,
+              segmentOrder: i + 1,
+              departure: seg.departure,
+              arrival: seg.arrival,
+              departureDate: seg.departureDate,
+              arrivalDate: seg.arrivalDate,
+              airline: seg.airline ?? null,
+              flightNumber: seg.flightNumber ?? null,
+              createdBy: actorId,
+              updatedBy: actorId,
+            })),
           });
 
-          return created;
+          // 5. Ajustar totales de la reserva
+          await touchReservation(tx, plane.reservationId, actorId, {
+            currency: plane.currency,
+            totalAdjustment: Number(plane.totalPrice),
+            paidAdjustment: Number(plane.amountPaid),
+          });
+
+          return plane;
         });
       },
+
+      // LOGGING
       this.logger,
       {
         op: 'PlanesService.create',
         actorId,
         extras: {
           reservationId: dto.reservationId,
-          departure: dto.departure,
-          arrival: dto.arrival,
-          provider: dto.provider,
-          departureDate:
-            dto.departureDate?.toISOString?.() ?? String(dto.departureDate),
-          arrivalDate:
-            dto.arrivalDate?.toISOString?.() ?? String(dto.arrivalDate),
+          segments: dto.segments.length,
+          bookingReference: dto.bookingReference,
+          currency: dto.currency,
+          totalPrice: dto.totalPrice,
         },
       },
     );
@@ -114,7 +99,15 @@ export class PlanesService {
 
   findOne(id: string) {
     return handleRequest(
-      () => this.prisma.plane.findUniqueOrThrow({ where: { id } }),
+      () =>
+        this.prisma.plane.findUniqueOrThrow({
+          where: { id },
+          include: {
+            segments: {
+              orderBy: { segmentOrder: 'asc' },
+            },
+          },
+        }),
       this.logger,
       {
         op: 'PlanesService.findOne',
@@ -126,20 +119,27 @@ export class PlanesService {
   findByReservation(reservationId: string) {
     return handleRequest(
       async () => {
-        // ✈️ Validamos que la reserva exista (coherencia con los demás servicios)
+        // 1️⃣ Validamos coherencia
         const exists = await this.prisma.reservation.findUnique({
           where: { id: reservationId },
           select: { id: true },
         });
+
         if (!exists) {
           throw new Error(`Reservation ${reservationId} not found`);
         }
 
-        // Obtenemos todos los vuelos asociados a esa reserva
-        // 🧭 Obtenemos todos los vuelos asociados a esa reserva
+        // 2️⃣ Obtenemos los vuelos + segmentos
         const planes = await this.prisma.plane.findMany({
           where: { reservationId },
-          orderBy: { departureDate: 'asc' },
+          include: {
+            segments: {
+              orderBy: { segmentOrder: 'asc' },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
         });
 
         return planes;
@@ -159,10 +159,6 @@ export class PlanesService {
         const current = await this.prisma.plane.findUniqueOrThrow({
           where: { id },
           select: {
-            departureDate: true,
-            arrivalDate: true,
-            departure: true,
-            arrival: true,
             totalPrice: true,
             amountPaid: true,
             reservationId: true,
@@ -170,31 +166,7 @@ export class PlanesService {
           },
         });
 
-        CommonOriginDestinationPolicies.assertUpdateDifferent(
-          dto,
-          { a: current.departure, b: current.arrival },
-          'departure',
-          'arrival',
-          {
-            required: 'any',
-            labels: { a: 'salida', b: 'llegada' },
-            ignoreCase: true,
-            trim: true,
-          },
-        );
-
-        CommonDatePolicies.assertUpdateRange(
-          dto,
-          { start: current.departureDate, end: current.arrivalDate },
-          'departureDate',
-          'arrivalDate',
-          {
-            minDurationMinutes: 60,
-            allowEqual: true,
-            labels: { start: 'fecha de salida', end: 'fecha de llegada' },
-          },
-        );
-
+        // 1) precio
         CommonPricePolicies.assertUpdatePrice(
           dto,
           { total: current.totalPrice, paid: current.amountPaid },
@@ -203,14 +175,29 @@ export class PlanesService {
           { labels: { total: 'total', paid: 'pagado' } },
         );
 
-        return this.prisma.$transaction(async (tx: PrismaClient) => {
+        // 2) si vienen segmentos, validamos la lista
+        if (dto.segments) {
+          if (dto.segments.length === 0) {
+            throw new BadRequestException(`Debe haber al menos 1 segmento.`);
+          }
+
+          // Validación individual
+          dto.segments.forEach((seg, i) => {
+            PlaneSegmentPolicies.assertValidSegment(seg, i);
+          });
+
+          // Validar orden
+          PlaneSegmentPolicies.assertSegmentOrder(dto.segments);
+
+          // Validar continuidad
+          PlaneSegmentPolicies.assertContinuous(dto.segments);
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+          // 3) actualizar plane
           const updated = await tx.plane.update({
             where: { id },
             data: {
-              departure: dto.departure ?? undefined,
-              arrival: dto.arrival ?? undefined,
-              departureDate: dto.departureDate ?? undefined,
-              arrivalDate: dto.arrivalDate ?? undefined,
               bookingReference: dto.bookingReference ?? undefined,
               provider: dto.provider ?? undefined,
               totalPrice:
@@ -218,8 +205,8 @@ export class PlanesService {
               amountPaid:
                 typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
               notes: dto.notes ?? undefined,
-              // NO permitir mover de reserva
               updatedBy: actorId,
+              // currency NOT updatable — DTO lo permite pero el model no
             },
             select: {
               id: true,
@@ -227,13 +214,6 @@ export class PlanesService {
               totalPrice: true,
               amountPaid: true,
               currency: true,
-              arrivalDate: true,
-              departureDate: true,
-              arrival: true,
-              departure: true,
-              provider: true,
-              notes: true,
-              bookingReference: true,
               createdAt: true,
               updatedAt: true,
               createdBy: true,
@@ -241,17 +221,45 @@ export class PlanesService {
             },
           });
 
-          await touchReservation(tx, current.reservationId, actorId, {
-            currency: current.currency,
-            totalAdjustment:
-              typeof dto.totalPrice === 'number'
-                ? Number(dto.totalPrice) - current.totalPrice.toNumber()
-                : 0,
-            paidAdjustment:
-              typeof dto.amountPaid === 'number'
-                ? Number(dto.amountPaid) - current.amountPaid.toNumber()
-                : 0,
-          });
+          // 4) si vinieron segmentos: reemplazarlos
+          if (dto.segments) {
+            await tx.planeSegment.deleteMany({
+              where: { planeId: id },
+            });
+
+            await tx.planeSegment.createMany({
+              data: dto.segments.map((s) => ({
+                planeId: id,
+                segmentOrder: s.segmentOrder,
+                departure: s.departure,
+                arrival: s.arrival,
+                departureDate: s.departureDate,
+                arrivalDate: s.arrivalDate,
+                airline: s.airline ?? null,
+                flightNumber: s.flightNumber ?? null,
+                createdBy: actorId,
+                updatedBy: actorId,
+              })),
+            });
+          }
+
+          // 5) reajuste monetario
+          await touchReservation(
+            tx as unknown as Omit<PrismaClient, '$transaction'>,
+            current.reservationId,
+            actorId,
+            {
+              currency: current.currency,
+              totalAdjustment:
+                typeof dto.totalPrice === 'number'
+                  ? Number(dto.totalPrice) - current.totalPrice.toNumber()
+                  : 0,
+              paidAdjustment:
+                typeof dto.amountPaid === 'number'
+                  ? Number(dto.amountPaid) - current.amountPaid.toNumber()
+                  : 0,
+            },
+          );
 
           return updated;
         });
@@ -262,8 +270,6 @@ export class PlanesService {
         actorId,
         extras: {
           id,
-          departureNew: dto.departure ?? undefined,
-          arrivalNew: dto.arrival ?? undefined,
           totalPriceNew:
             typeof dto.totalPrice === 'number'
               ? Number(dto.totalPrice)
@@ -272,8 +278,7 @@ export class PlanesService {
             typeof dto.amountPaid === 'number'
               ? Number(dto.amountPaid)
               : undefined,
-          departureDateNew: dto.departureDate?.toISOString?.() ?? undefined,
-          arrivalDateNew: dto.arrivalDate?.toISOString?.() ?? undefined,
+          segmentsCount: dto.segments?.length ?? undefined,
         },
       },
     );

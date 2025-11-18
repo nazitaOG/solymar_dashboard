@@ -180,13 +180,9 @@ async function main(): Promise<void> {
     },
   });
 
-  await prisma.plane.create({
+  const plane = await prisma.plane.create({
     data: {
       reservationId: reservation.id,
-      departure: 'EZE',
-      arrival: 'MIA',
-      departureDate: new Date('2025-11-01T20:00:00Z'),
-      arrivalDate: new Date('2025-11-02T05:00:00Z'),
       totalPrice: new Prisma.Decimal('30000.00'),
       amountPaid: new Prisma.Decimal('30000.00'),
       bookingReference: 'PLN-456',
@@ -196,6 +192,35 @@ async function main(): Promise<void> {
       createdBy: SYSTEM_ID,
       updatedBy: SYSTEM_ID,
     },
+  });
+
+  await prisma.planeSegment.createMany({
+    data: [
+      {
+        planeId: plane.id,
+        segmentOrder: 1,
+        departure: 'EZE',
+        arrival: 'LIM',
+        departureDate: new Date('2025-11-01T20:00:00Z'),
+        arrivalDate: new Date('2025-11-01T23:20:00Z'),
+        airline: 'LA',
+        flightNumber: 'LA633',
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
+      {
+        planeId: plane.id,
+        segmentOrder: 2,
+        departure: 'LIM',
+        arrival: 'MIA',
+        departureDate: new Date('2025-11-02T01:00:00Z'),
+        arrivalDate: new Date('2025-11-02T05:00:00Z'),
+        airline: 'LA',
+        flightNumber: 'LA245',
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
+    ],
   });
 
   await prisma.cruise.create({
