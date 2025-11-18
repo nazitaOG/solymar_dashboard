@@ -168,7 +168,7 @@ model Transfer {
   departureDate    DateTime
   destination      String?       @db.VarChar(128)
   origin           String        @db.VarChar(128)
-  transportType    TransportType @default(PICKUP)
+  transportType    TransportType @default(TRANSFER)
   bookingReference String?       @db.VarChar(128)
   createdAt        DateTime      @default(now()) @db.Timestamptz(6)
   createdBy        String        @db.Uuid
@@ -297,7 +297,7 @@ enum ReservationState {
 }
 
 enum TransportType {
-  PICKUP
+  TRANSFER
   BUS
   TRAIN
   FERRY
