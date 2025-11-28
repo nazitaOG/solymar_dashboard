@@ -60,9 +60,42 @@ model Reservation {
   medicalAssists  MedicalAssist[]
   paxReservations PaxReservation[]
   planes          Plane[]
+  carRentals      CarRental[]
   user            User                       @relation(fields: [userId], references: [id])
   currencyTotals  ReservationCurrencyTotal[]
   transfers       Transfer[]
+}
+
+model CarRental {
+  id               String   @id @default(uuid()) @db.Uuid
+  reservationId    String   @db.Uuid
+  provider         String   @db.VarChar(128)       // Ej: Hertz, Avis, Alamo
+  bookingReference String?  @db.VarChar(255)       // Código de reserva del proveedor
+  
+  // Detalles del servicio
+  pickupDate       DateTime
+  dropoffDate      DateTime
+  pickupLocation   String   @db.VarChar(128)       // Ej: Aeropuerto MIA
+  dropoffLocation  String   @db.VarChar(128)       // Ej: Aeropuerto MCO
+  carCategory      String   @db.VarChar(128)       // Ej: Compacto, SUV, Minivan
+  carModel         String?  @db.VarChar(255)       // Ej: Toyota Corolla o similar
+  
+  // Financiero
+  totalPrice       Decimal  @db.Decimal(18, 2)
+  amountPaid       Decimal  @db.Decimal(18, 2)
+  currency         Currency
+
+  // Auditoría
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  createdBy        String   @db.Uuid
+  updatedBy        String   @db.Uuid
+  updatedAt        DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+  @@index([currency])
 }
 
 model Hotel {
