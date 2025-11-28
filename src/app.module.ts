@@ -11,6 +11,7 @@ import { TransfersModule } from './transfers/transfers.module';
 import { ExcursionsModule } from './excursions/excursions.module';
 import { MedicalAssistsModule } from './medical_assists/medical_assists.module';
 import { AuthModule } from './auth/auth.module';
+import { CarRentalsModule } from './car-rentals/car-rentals.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { AuthModule } from './auth/auth.module';
     ExcursionsModule,
     MedicalAssistsModule,
     AuthModule,
+    CarRentalsModule,
   ],
 })
 export class AppModule {}
