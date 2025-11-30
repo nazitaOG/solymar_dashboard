@@ -22,7 +22,7 @@ export class PlanesController {
 
   @Post()
   create(@GetUser() user: User, @Body() createPlaneDto: CreatePlaneDto) {
-    return this.planesService.create(user.id, createPlaneDto);
+    return this.planesService.create(user.username, createPlaneDto);
   }
 
   @Get(':id')
@@ -41,11 +41,11 @@ export class PlanesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updatePlaneDto: UpdatePlaneDto,
   ) {
-    return this.planesService.update(user.id, id, updatePlaneDto);
+    return this.planesService.update(user.username, id, updatePlaneDto);
   }
 
   @Delete(':id')
   remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
-    return this.planesService.remove(user.id, id);
+    return this.planesService.remove(user.username, id);
   }
 }

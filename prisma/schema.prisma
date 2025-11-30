@@ -8,26 +8,26 @@ datasource db {
 }
 
 model User {
-  id             String        @id @default(uuid()) @db.Uuid
+  id             String    @id @default(uuid()) @db.Uuid
   hashedPassword String
-  email          String        @unique
-  username       String        @unique
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now()) @db.Timestamptz(6)
-  createdBy      String        @db.Uuid
-  updatedBy      String        @db.Uuid
-  updatedAt      DateTime      @updatedAt @db.Timestamptz(6)
+  email          String    @unique
+  username       String    @unique
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy      String    // ✅ Ahora es String (texto), acepta usernames
+  updatedBy      String    // ✅ Ahora es String (texto), acepta usernames
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(6)
   reservations   Reservation[]
   roleUsers      RoleUser[]
 }
 
 model Role {
-  id          String     @id @default(uuid()) @db.Uuid
-  description String     @unique
-  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
-  createdBy   String     @db.Uuid
-  updatedBy   String     @db.Uuid
-  updatedAt   DateTime   @updatedAt @db.Timestamptz(6)
+  id          String    @id @default(uuid()) @db.Uuid
+  description String    @unique
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy   String
+  updatedBy   String
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
   roleUsers   RoleUser[]
 }
 
@@ -35,8 +35,8 @@ model RoleUser {
   roleId    String   @db.Uuid
   userId    String   @db.Uuid
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  createdBy String   @db.Uuid
-  updatedBy String   @db.Uuid
+  createdBy String
+  updatedBy String
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -45,40 +45,40 @@ model RoleUser {
 }
 
 model Reservation {
-  id              String                     @id @default(uuid()) @db.Uuid
-  code            Int                        @unique @default(autoincrement())
-  name            String                     @default("RES")
-  userId          String                     @db.Uuid
-  state           ReservationState           @default(PENDING)
-  createdAt       DateTime                   @default(now()) @db.Timestamptz(6)
-  createdBy       String                     @db.Uuid
-  updatedBy       String                     @db.Uuid
-  updatedAt       DateTime                   @updatedAt @db.Timestamptz(6)
-  cruises         Cruise[]
-  excursions      Excursion[]
-  hotels          Hotel[]
-  medicalAssists  MedicalAssist[]
+  id             String                   @id @default(uuid()) @db.Uuid
+  code           Int                      @unique @default(autoincrement())
+  name           String                   @default("RES")
+  userId         String                   @db.Uuid
+  state          ReservationState         @default(PENDING)
+  createdAt      DateTime                 @default(now()) @db.Timestamptz(6)
+  createdBy      String
+  updatedBy      String
+  updatedAt      DateTime                 @updatedAt @db.Timestamptz(6)
+  cruises        Cruise[]
+  excursions     Excursion[]
+  hotels         Hotel[]
+  medicalAssists MedicalAssist[]
   paxReservations PaxReservation[]
-  planes          Plane[]
-  carRentals      CarRental[]
-  user            User                       @relation(fields: [userId], references: [id])
-  currencyTotals  ReservationCurrencyTotal[]
-  transfers       Transfer[]
+  planes         Plane[]
+  carRentals     CarRental[]
+  user           User                     @relation(fields: [userId], references: [id])
+  currencyTotals ReservationCurrencyTotal[]
+  transfers      Transfer[]
 }
 
 model CarRental {
   id               String   @id @default(uuid()) @db.Uuid
   reservationId    String   @db.Uuid
-  provider         String   @db.VarChar(128)       // Ej: Hertz, Avis, Alamo
-  bookingReference String?  @db.VarChar(255)       // Código de reserva del proveedor
+  provider         String   @db.VarChar(128)
+  bookingReference String?  @db.VarChar(255)
   
   // Detalles del servicio
   pickupDate       DateTime
   dropoffDate      DateTime
-  pickupLocation   String   @db.VarChar(128)       // Ej: Aeropuerto MIA
-  dropoffLocation  String   @db.VarChar(128)       // Ej: Aeropuerto MCO
-  carCategory      String   @db.VarChar(128)       // Ej: Compacto, SUV, Minivan
-  carModel         String?  @db.VarChar(255)       // Ej: Toyota Corolla o similar
+  pickupLocation   String   @db.VarChar(128)
+  dropoffLocation  String   @db.VarChar(128)
+  carCategory      String   @db.VarChar(128)
+  carModel         String?  @db.VarChar(255)
   
   // Financiero
   totalPrice       Decimal  @db.Decimal(18, 2)
@@ -87,8 +87,8 @@ model CarRental {
 
   // Auditoría
   createdAt        DateTime @default(now()) @db.Timestamptz(6)
-  createdBy        String   @db.Uuid
-  updatedBy        String   @db.Uuid
+  createdBy        String
+  updatedBy        String
   updatedAt        DateTime @updatedAt @db.Timestamptz(6)
 
   // Relaciones
@@ -111,8 +111,8 @@ model Hotel {
   provider         String      @db.VarChar(128)
   reservationId    String      @db.Uuid
   createdAt        DateTime    @default(now()) @db.Timestamptz(6)
-  createdBy        String      @db.Uuid
-  updatedBy        String      @db.Uuid
+  createdBy        String
+  updatedBy        String
   currency         Currency
   updatedAt        DateTime    @updatedAt @db.Timestamptz(6)
   reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
@@ -132,8 +132,8 @@ model Plane {
   currency         Currency
 
   createdAt        DateTime    @default(now()) @db.Timestamptz(6)
-  createdBy        String      @db.Uuid
-  updatedBy        String      @db.Uuid
+  createdBy        String
+  updatedBy        String
   updatedAt        DateTime    @updatedAt @db.Timestamptz(6)
 
   reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
@@ -146,30 +146,28 @@ model Plane {
 
 
 model PlaneSegment {
-  id            String   @id @default(uuid()) @db.Uuid
-  planeId       String   @db.Uuid
-  segmentOrder  Int
+  id           String   @id @default(uuid()) @db.Uuid
+  planeId      String   @db.Uuid
+  segmentOrder Int
 
-  departure     String   @db.VarChar(3)
-  arrival       String   @db.VarChar(3)
+  departure    String   @db.VarChar(3)
+  arrival      String   @db.VarChar(3)
   departureDate DateTime
   arrivalDate   DateTime
 
-  airline       String?  @db.VarChar(128)
-  flightNumber  String?  @db.VarChar(64)
+  airline      String?  @db.VarChar(128)
+  flightNumber String?  @db.VarChar(64)
 
-  createdAt     DateTime @default(now()) @db.Timestamptz(6)
-  createdBy     String   @db.Uuid
-  updatedBy     String   @db.Uuid
-  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  createdBy    String
+  updatedBy    String
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
 
-  plane         Plane    @relation(fields: [planeId], references: [id], onDelete: Cascade)
+  plane        Plane    @relation(fields: [planeId], references: [id], onDelete: Cascade)
 
   @@index([planeId])
   @@index([segmentOrder])
 }
-
-
 
 model Cruise {
   id               String      @id @default(uuid()) @db.Uuid
@@ -183,8 +181,8 @@ model Cruise {
   reservationId    String      @db.Uuid
   endDate          DateTime?
   createdAt        DateTime    @default(now()) @db.Timestamptz(6)
-  createdBy        String      @db.Uuid
-  updatedBy        String      @db.Uuid
+  createdBy        String
+  updatedBy        String
   currency         Currency
   updatedAt        DateTime    @updatedAt @db.Timestamptz(6)
   reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
@@ -206,8 +204,8 @@ model Transfer {
   transportType    TransportType @default(TRANSFER)
   bookingReference String?       @db.VarChar(128)
   createdAt        DateTime      @default(now()) @db.Timestamptz(6)
-  createdBy        String        @db.Uuid
-  updatedBy        String        @db.Uuid
+  createdBy        String
+  updatedBy        String
   currency         Currency
   updatedAt        DateTime      @updatedAt @db.Timestamptz(6)
   reservation      Reservation   @relation(fields: [reservationId], references: [id], onDelete: Cascade)
@@ -227,8 +225,8 @@ model Excursion {
   origin           String      @db.VarChar(128)
   bookingReference String?     @db.VarChar(128)
   createdAt        DateTime    @default(now()) @db.Timestamptz(6)
-  createdBy        String      @db.Uuid
-  updatedBy        String      @db.Uuid
+  createdBy        String
+  updatedBy        String
   currency         Currency
   updatedAt        DateTime    @updatedAt @db.Timestamptz(6)
   reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
@@ -246,8 +244,8 @@ model MedicalAssist {
   provider         String      @db.VarChar(128)
   reservationId    String      @db.Uuid
   createdAt        DateTime    @default(now()) @db.Timestamptz(6)
-  createdBy        String      @db.Uuid
-  updatedBy        String      @db.Uuid
+  createdBy        String
+  updatedBy        String
   currency         Currency
   updatedAt        DateTime    @updatedAt @db.Timestamptz(6)
   reservation      Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
@@ -262,8 +260,8 @@ model Pax {
   birthDate       DateTime
   nationality     String
   createdAt       DateTime         @default(now()) @db.Timestamptz(6)
-  createdBy       String           @db.Uuid
-  updatedBy       String           @db.Uuid
+  createdBy       String
+  updatedBy       String
   updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
   dni             Dni?
   passport        Passport?
@@ -276,8 +274,8 @@ model Passport {
   expirationDate DateTime?
   paxId          String   @unique @db.Uuid
   createdAt      DateTime @default(now()) @db.Timestamptz(6)
-  createdBy      String   @db.Uuid
-  updatedBy      String   @db.Uuid
+  createdBy      String
+  updatedBy      String
   updatedAt      DateTime @updatedAt @db.Timestamptz(6)
   pax            Pax      @relation(fields: [paxId], references: [id], onDelete: Cascade)
 }
@@ -288,8 +286,8 @@ model Dni {
   expirationDate DateTime?
   paxId          String   @unique @db.Uuid
   createdAt      DateTime @default(now()) @db.Timestamptz(6)
-  createdBy      String   @db.Uuid
-  updatedBy      String   @db.Uuid
+  createdBy      String
+  updatedBy      String
   updatedAt      DateTime @updatedAt @db.Timestamptz(6)
   pax            Pax      @relation(fields: [paxId], references: [id], onDelete: Cascade)
 }
@@ -299,8 +297,8 @@ model PaxReservation {
   paxId         String      @db.Uuid
   reservationId String      @db.Uuid
   createdAt     DateTime    @default(now()) @db.Timestamptz(6)
-  createdBy     String      @db.Uuid
-  updatedBy     String      @db.Uuid
+  createdBy     String
+  updatedBy     String
   updatedAt     DateTime    @updatedAt @db.Timestamptz(6)
   pax           Pax         @relation(fields: [paxId], references: [id], onDelete: Cascade)
   reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)

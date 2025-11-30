@@ -25,7 +25,7 @@ export class CarRentalsController {
     @GetUser() user: User,
     @Body() createCarRentalDto: CreateCarRentalDto,
   ) {
-    return this.carRentalsService.create(user.id, createCarRentalDto);
+    return this.carRentalsService.create(user.username, createCarRentalDto);
   }
 
   @Get(':id')
@@ -44,11 +44,11 @@ export class CarRentalsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCarRentalDto: UpdateCarRentalDto,
   ) {
-    return this.carRentalsService.update(user.id, id, updateCarRentalDto);
+    return this.carRentalsService.update(user.username, id, updateCarRentalDto);
   }
 
   @Delete(':id')
   remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
-    return this.carRentalsService.remove(user.id, id);
+    return this.carRentalsService.remove(user.username, id);
   }
 }

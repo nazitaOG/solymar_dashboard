@@ -5,7 +5,7 @@ import type { Prisma } from '@prisma/client';
 export interface LogContext {
   op?: string; // ej: 'PlanesService.create'
   requestId?: string; // si tenés un middleware de correlación
-  actorId?: string; // usuario autenticado
+  username?: string; // nombre de usuario del usuario autenticado
   extras?: Record<string, unknown>;
 }
 

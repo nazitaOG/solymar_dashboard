@@ -14,8 +14,8 @@ export class ExcursionsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // actorId = id del usuario autenticado
-  create(actorId: string, dto: CreateExcursionDto) {
+  // username = nombre de usuario del usuario autenticado
+  create(username: string, dto: CreateExcursionDto) {
     return handleRequest(
       async () => {
         CommonPricePolicies.assertCreatePrice(dto, 'totalPrice', 'amountPaid', {
@@ -34,12 +34,12 @@ export class ExcursionsService {
               excursionName: dto.excursionName,
               reservationId: dto.reservationId,
               currency: dto.currency,
-              createdBy: actorId,
-              updatedBy: actorId,
+              createdBy: username,
+              updatedBy: username,
             },
           });
 
-          await touchReservation(tx, excursion.reservationId, actorId, {
+          await touchReservation(tx, excursion.reservationId, username, {
             currency: excursion.currency,
             totalAdjustment: Number(excursion.totalPrice),
             paidAdjustment: Number(excursion.amountPaid),
@@ -51,7 +51,7 @@ export class ExcursionsService {
       this.logger,
       {
         op: 'ExcursionsService.create',
-        actorId,
+        username,
         extras: {
           reservationId: dto.reservationId,
           provider: dto.provider,
@@ -103,8 +103,8 @@ export class ExcursionsService {
     );
   }
 
-  // actorId = id del usuario autenticado
-  update(actorId: string, id: string, dto: UpdateExcursionDto) {
+  // username = nombre de usuario del usuario autenticado
+  update(username: string, id: string, dto: UpdateExcursionDto) {
     return handleRequest(
       async () => {
         // Traer actuales para validar y calcular ajustes
@@ -140,11 +140,11 @@ export class ExcursionsService {
               excursionDate: dto.excursionDate ?? undefined,
               excursionName: dto.excursionName ?? undefined,
               // NO se permite mover de reserva
-              updatedBy: actorId,
+              updatedBy: username,
             },
           });
 
-          await touchReservation(tx, current.reservationId, actorId, {
+          await touchReservation(tx, current.reservationId, username, {
             currency: current.currency,
             totalAdjustment:
               typeof dto.totalPrice === 'number'
@@ -162,7 +162,7 @@ export class ExcursionsService {
       this.logger,
       {
         op: 'ExcursionsService.update',
-        actorId,
+        username,
         extras: {
           id,
           // Solo logueamos cambios numéricos si vienen; evitá PII
@@ -179,7 +179,7 @@ export class ExcursionsService {
     );
   }
 
-  remove(actorId: string, id: string) {
+  remove(username: string, id: string) {
     return handleRequest(
       async () => {
         return this.prisma.$transaction(async (tx: PrismaClient) => {
@@ -194,7 +194,7 @@ export class ExcursionsService {
             },
           });
 
-          await touchReservation(tx, deleted.reservationId, actorId, {
+          await touchReservation(tx, deleted.reservationId, username, {
             currency: deleted.currency,
             totalAdjustment: -deleted.totalPrice.toNumber(),
             paidAdjustment: -deleted.amountPaid.toNumber(),
@@ -206,7 +206,7 @@ export class ExcursionsService {
       this.logger,
       {
         op: 'ExcursionsService.remove',
-        actorId,
+        username,
         extras: { id },
       },
     );

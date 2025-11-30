@@ -16,7 +16,7 @@ export class TransfersService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  create(actorId: string, dto: CreateTransferDto) {
+  create(username: string, dto: CreateTransferDto) {
     return handleRequest(
       async () => {
         CommonOriginDestinationPolicies.assertCreateDifferent(
@@ -60,12 +60,12 @@ export class TransfersService {
               amountPaid: dto.amountPaid,
               transportType: dto.transportType ?? undefined,
               currency: dto.currency,
-              createdBy: actorId,
-              updatedBy: actorId,
+              createdBy: username,
+              updatedBy: username,
             },
           });
 
-          await touchReservation(tx, created.reservationId, actorId, {
+          await touchReservation(tx, created.reservationId, username, {
             currency: created.currency,
             totalAdjustment: Number(created.totalPrice),
             paidAdjustment: Number(created.amountPaid),
@@ -77,7 +77,7 @@ export class TransfersService {
       this.logger,
       {
         op: 'TransfersService.create',
-        actorId,
+        username,
         extras: {
           reservationId: dto.reservationId,
           origin: dto.origin,
@@ -132,7 +132,7 @@ export class TransfersService {
     );
   }
 
-  update(actorId: string, id: string, dto: UpdateTransferDto) {
+  update(username: string, id: string, dto: UpdateTransferDto) {
     return handleRequest(
       async () => {
         const current = await this.prisma.transfer.findUniqueOrThrow({
@@ -197,11 +197,11 @@ export class TransfersService {
               amountPaid:
                 typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
               transportType: dto.transportType ?? undefined,
-              updatedBy: actorId,
+              updatedBy: username,
             },
           });
 
-          await touchReservation(tx, current.reservationId, actorId, {
+          await touchReservation(tx, current.reservationId, username, {
             currency: current.currency,
             totalAdjustment:
               typeof dto.totalPrice === 'number'
@@ -219,7 +219,7 @@ export class TransfersService {
       this.logger,
       {
         op: 'TransfersService.update',
-        actorId,
+        username,
         extras: {
           id,
           originNew: dto.origin ?? undefined,
@@ -239,7 +239,7 @@ export class TransfersService {
     );
   }
 
-  remove(actorId: string, id: string) {
+  remove(username: string, id: string) {
     return handleRequest(
       async () => {
         return this.prisma.$transaction(async (tx: PrismaClient) => {
@@ -254,7 +254,7 @@ export class TransfersService {
             },
           });
 
-          await touchReservation(tx, deleted.reservationId, actorId, {
+          await touchReservation(tx, deleted.reservationId, username, {
             currency: deleted.currency,
             totalAdjustment: -deleted.totalPrice.toNumber(),
             paidAdjustment: -deleted.amountPaid.toNumber(),
@@ -266,7 +266,7 @@ export class TransfersService {
       this.logger,
       {
         op: 'TransfersService.remove',
-        actorId,
+        username,
         extras: { id },
       },
     );

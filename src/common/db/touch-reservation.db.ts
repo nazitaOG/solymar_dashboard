@@ -9,13 +9,13 @@ type TouchReservationParams = {
 export async function touchReservation(
   tx: Omit<PrismaClient, '$transaction'>,
   reservationId: string,
-  actorId: string,
+  username: string,
   params?: TouchReservationParams,
 ) {
   // Siempre sellamos la reserva
   await tx.reservation.update({
     where: { id: reservationId },
-    data: { updatedBy: actorId },
+    data: { updatedBy: username },
     select: { id: true },
   });
 

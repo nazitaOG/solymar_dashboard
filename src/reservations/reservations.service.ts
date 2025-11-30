@@ -23,8 +23,9 @@ export class ReservationsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  // username = nombre de usuario del usuario autenticado
   // actorId = id del usuario autenticado
-  create(actorId: string, dto: CreateReservationDto) {
+  create(username: string, actorId: string, dto: CreateReservationDto) {
     return handleRequest(
       () =>
         this.prisma.$transaction(async (tx) => {
@@ -45,7 +46,7 @@ export class ReservationsService {
           // Crear reserva + join a pax (sellos en todas las filas)
           const res = await tx.reservation.create({
             data: {
-              userId: dto.userId ?? actorId, // si no viene, usa el actorId
+              userId: actorId,
               state: dto.state,
               createdBy: actorId,
               updatedBy: actorId,
@@ -76,9 +77,9 @@ export class ReservationsService {
       this.logger,
       {
         op: 'ReservationsService.create',
-        actorId,
+        username,
         extras: {
-          userId: dto.userId,
+          userId: actorId,
           paxCount: new Set(dto.paxIds).size,
           state: dto.state,
         },
@@ -191,13 +192,13 @@ export class ReservationsService {
   }
 
   // actorId = id del usuario autenticado
-  update(actorId: string, id: string, dto: UpdateReservationDto) {
+  update(username: string, id: string, dto: UpdateReservationDto) {
     return handleRequest(
       () =>
         this.prisma.$transaction(async (tx) => {
           const data: Parameters<typeof tx.reservation.update>[0]['data'] = {
             ...(dto.state && { state: dto.state }),
-            updatedBy: actorId,
+            updatedBy: username,
           };
 
           let added = 0;
@@ -246,8 +247,8 @@ export class ReservationsService {
                 data: toAdd.map((paxId) => ({
                   paxId,
                   reservationId: id,
-                  createdBy: actorId,
-                  updatedBy: actorId,
+                  createdBy: username,
+                  updatedBy: username,
                 })),
                 skipDuplicates: true,
               });
@@ -281,7 +282,7 @@ export class ReservationsService {
       this.logger,
       {
         op: 'ReservationsService.update',
-        actorId,
+        username,
         extras: {
           id,
           stateNew: dto.state ?? undefined,
@@ -294,8 +295,8 @@ export class ReservationsService {
     );
   }
 
-  // actorId = id del usuario autenticado
-  remove(actorId: string, id: string) {
+  // username = nombre de usuario del usuario autenticado
+  remove(username: string, id: string) {
     return handleRequest(
       () =>
         this.prisma.reservation.delete({
@@ -309,7 +310,7 @@ export class ReservationsService {
       this.logger,
       {
         op: 'ReservationsService.remove',
-        actorId,
+        username,
         extras: { id },
       },
     );

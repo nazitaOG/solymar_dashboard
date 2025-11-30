@@ -22,7 +22,7 @@ export class CruisesController {
 
   @Post()
   create(@GetUser() user: User, @Body() createCruiseDto: CreateCruiseDto) {
-    return this.cruisesService.create(user.id, createCruiseDto);
+    return this.cruisesService.create(user.username, createCruiseDto);
   }
 
   @Get(':id')
@@ -41,11 +41,11 @@ export class CruisesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCruiseDto: UpdateCruiseDto,
   ) {
-    return this.cruisesService.update(user.id, id, updateCruiseDto);
+    return this.cruisesService.update(user.username, id, updateCruiseDto);
   }
 
   @Delete(':id')
   remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
-    return this.cruisesService.remove(user.id, id);
+    return this.cruisesService.remove(user.username, id);
   }
 }

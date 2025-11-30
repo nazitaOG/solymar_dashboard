@@ -22,7 +22,7 @@ export class TransfersController {
 
   @Post()
   create(@GetUser() user: User, @Body() createTransferDto: CreateTransferDto) {
-    return this.transfersService.create(user.id, createTransferDto);
+    return this.transfersService.create(user.username, createTransferDto);
   }
 
   @Get(':id')
@@ -41,11 +41,11 @@ export class TransfersController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateTransferDto: UpdateTransferDto,
   ) {
-    return this.transfersService.update(user.id, id, updateTransferDto);
+    return this.transfersService.update(user.username, id, updateTransferDto);
   }
 
   @Delete(':id')
   remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
-    return this.transfersService.remove(user.id, id);
+    return this.transfersService.remove(user.username, id);
   }
 }

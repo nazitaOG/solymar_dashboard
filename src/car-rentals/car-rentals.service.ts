@@ -15,7 +15,7 @@ export class CarRentalsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  create(actorId: string, dto: CreateCarRentalDto) {
+  create(username: string, dto: CreateCarRentalDto) {
     return handleRequest(
       async () => {
         // 1. Validar fechas (Retiro vs Devolución)
@@ -46,12 +46,12 @@ export class CarRentalsService {
               carCategory: dto.carCategory,
               carModel: dto.carModel ?? undefined,
               currency: dto.currency,
-              createdBy: actorId,
-              updatedBy: actorId,
+              createdBy: username,
+              updatedBy: username,
             },
           });
 
-          await touchReservation(tx, created.reservationId, actorId, {
+          await touchReservation(tx, created.reservationId, username, {
             currency: created.currency,
             totalAdjustment: Number(created.totalPrice),
             paidAdjustment: Number(created.amountPaid),
@@ -63,7 +63,7 @@ export class CarRentalsService {
       this.logger,
       {
         op: 'CarRentalsService.create',
-        actorId,
+        username,
         extras: {
           reservationId: dto.reservationId,
           provider: dto.provider,
@@ -111,7 +111,7 @@ export class CarRentalsService {
     );
   }
 
-  update(actorId: string, id: string, dto: UpdateCarRentalDto) {
+  update(username: string, id: string, dto: UpdateCarRentalDto) {
     return handleRequest(
       async () => {
         // Obtener datos actuales para validación y cálculo de diferencias
@@ -165,12 +165,12 @@ export class CarRentalsService {
                 typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
               carCategory: dto.carCategory ?? undefined,
               carModel: dto.carModel ?? undefined,
-              updatedBy: actorId,
+              updatedBy: username,
             },
           });
 
           // Actualizar totales en la reserva principal
-          await touchReservation(tx, current.reservationId, actorId, {
+          await touchReservation(tx, current.reservationId, username, {
             currency: current.currency,
             totalAdjustment:
               typeof dto.totalPrice === 'number'
@@ -188,7 +188,7 @@ export class CarRentalsService {
       this.logger,
       {
         op: 'CarRentalsService.update',
-        actorId,
+        username,
         extras: {
           id,
           pickupDateNew: dto.pickupDate?.toISOString?.() ?? undefined,
@@ -202,7 +202,7 @@ export class CarRentalsService {
     );
   }
 
-  remove(actorId: string, id: string) {
+  remove(username: string, id: string) {
     return handleRequest(
       async () => {
         return this.prisma.$transaction(async (tx: PrismaClient) => {
@@ -218,7 +218,7 @@ export class CarRentalsService {
           });
 
           // Restar los montos de la reserva
-          await touchReservation(tx, deleted.reservationId, actorId, {
+          await touchReservation(tx, deleted.reservationId, username, {
             currency: deleted.currency,
             totalAdjustment: -deleted.totalPrice.toNumber(),
             paidAdjustment: -deleted.amountPaid.toNumber(),
@@ -230,7 +230,7 @@ export class CarRentalsService {
       this.logger,
       {
         op: 'CarRentalsService.remove',
-        actorId,
+        username,
         extras: { id },
       },
     );

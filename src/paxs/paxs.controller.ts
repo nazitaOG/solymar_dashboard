@@ -22,7 +22,7 @@ export class PaxController {
 
   @Post()
   create(@GetUser() user: User, @Body() createPaxDto: CreatePaxDto) {
-    return this.paxService.create(user.id, createPaxDto);
+    return this.paxService.create(user.username, createPaxDto);
   }
 
   @Get()
@@ -41,11 +41,11 @@ export class PaxController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updatePaxDto: UpdatePaxDto,
   ) {
-    return this.paxService.update(user.id, id, updatePaxDto);
+    return this.paxService.update(user.username, id, updatePaxDto);
   }
 
   @Delete(':id')
   remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
-    return this.paxService.remove(user.id, id);
+    return this.paxService.remove(user.username, id);
   }
 }

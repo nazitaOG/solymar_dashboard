@@ -15,7 +15,7 @@ export class HotelsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  create(actorId: string, dto: CreateHotelDto) {
+  create(username: string, dto: CreateHotelDto) {
     return handleRequest(
       async () => {
         CommonDatePolicies.assertCreateRange(dto, 'startDate', 'endDate', {
@@ -40,8 +40,8 @@ export class HotelsService {
               roomType: dto.roomType,
               provider: dto.provider,
               reservationId: dto.reservationId,
-              createdBy: actorId,
-              updatedBy: actorId,
+              createdBy: username,
+              updatedBy: username,
             },
             select: {
               id: true,
@@ -63,7 +63,7 @@ export class HotelsService {
             },
           });
 
-          await touchReservation(tx, hotel.reservationId, actorId, {
+          await touchReservation(tx, hotel.reservationId, username, {
             currency: hotel.currency,
             totalAdjustment: Number(hotel.totalPrice),
             paidAdjustment: Number(hotel.amountPaid),
@@ -75,7 +75,7 @@ export class HotelsService {
       this.logger,
       {
         op: 'HotelsService.create',
-        actorId,
+        username,
         extras: {
           reservationId: dto.reservationId,
           city: dto.city,
@@ -127,7 +127,7 @@ export class HotelsService {
     );
   }
 
-  update(actorId: string, id: string, dto: UpdateHotelDto) {
+  update(username: string, id: string, dto: UpdateHotelDto) {
     return handleRequest(
       async () => {
         const current = await this.prisma.hotel.findUniqueOrThrow({
@@ -175,7 +175,7 @@ export class HotelsService {
                 typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
               roomType: dto.roomType ?? undefined,
               provider: dto.provider ?? undefined,
-              updatedBy: actorId,
+              updatedBy: username,
             },
             select: {
               id: true,
@@ -197,7 +197,7 @@ export class HotelsService {
             },
           });
 
-          await touchReservation(tx, current.reservationId, actorId, {
+          await touchReservation(tx, current.reservationId, username, {
             currency: current.currency,
             totalAdjustment:
               typeof dto.totalPrice === 'number'
@@ -215,7 +215,7 @@ export class HotelsService {
       this.logger,
       {
         op: 'HotelsService.update',
-        actorId,
+        username,
         extras: {
           id,
           totalPriceNew:
@@ -233,7 +233,7 @@ export class HotelsService {
     );
   }
 
-  remove(actorId: string, id: string) {
+  remove(username: string, id: string) {
     return handleRequest(
       async () => {
         return this.prisma.$transaction(async (tx: PrismaClient) => {
@@ -289,7 +289,7 @@ export class HotelsService {
       this.logger,
       {
         op: 'HotelsService.remove',
-        actorId,
+        username,
         extras: { id },
       },
     );

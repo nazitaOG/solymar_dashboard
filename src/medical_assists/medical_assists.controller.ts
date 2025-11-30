@@ -22,7 +22,7 @@ export class MedicalAssistsController {
 
   @Post()
   create(@GetUser() user: User, @Body() dto: CreateMedicalAssistDto) {
-    return this.medicalAssistsService.create(user.id, dto);
+    return this.medicalAssistsService.create(user.username, dto);
   }
 
   @Get(':id')
@@ -41,11 +41,11 @@ export class MedicalAssistsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateMedicalAssistDto,
   ) {
-    return this.medicalAssistsService.update(user.id, id, dto);
+    return this.medicalAssistsService.update(user.username, id, dto);
   }
 
   @Delete(':id')
   remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
-    return this.medicalAssistsService.remove(user.id, id);
+    return this.medicalAssistsService.remove(user.username, id);
   }
 }

@@ -13,8 +13,8 @@ export class PaxService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // actorId = id del usuario autenticado
-  create(actorId: string, dto: CreatePaxDto) {
+  // username = nombre de usuario del usuario autenticado
+  create(username: string, dto: CreatePaxDto) {
     const hasPassport = hasPrimary(dto.passportNum, dto.passportExpirationDate);
     const hasDni = hasPrimary(dto.dniNum, dto.dniExpirationDate);
 
@@ -35,8 +35,8 @@ export class PaxService {
             birthDate: new Date(dto.birthDate),
             nationality: dto.nationality.toUpperCase(),
 
-            createdBy: actorId,
-            updatedBy: actorId,
+            createdBy: username,
+            updatedBy: username,
 
             passport: hasPassport
               ? {
@@ -47,8 +47,8 @@ export class PaxService {
                       dto.dniExpirationDate.trim() !== ''
                         ? new Date(dto.dniExpirationDate)
                         : null,
-                    createdBy: actorId,
-                    updatedBy: actorId,
+                    createdBy: username,
+                    updatedBy: username,
                   },
                 }
               : undefined,
@@ -62,8 +62,8 @@ export class PaxService {
                       dto.dniExpirationDate.trim() !== ''
                         ? new Date(dto.dniExpirationDate)
                         : null,
-                    createdBy: actorId,
-                    updatedBy: actorId,
+                    createdBy: username,
+                    updatedBy: username,
                   },
                 }
               : undefined,
@@ -74,7 +74,7 @@ export class PaxService {
       this.logger,
       {
         op: 'PaxService.create',
-        actorId,
+        username,
         extras: {
           hasPassport,
           hasDni,
@@ -114,7 +114,7 @@ export class PaxService {
   }
 
   // actorId = id del usuario autenticado
-  update(actorId: string, id: string, dto: UpdatePaxDto) {
+  update(username: string, id: string, dto: UpdatePaxDto) {
     return handleRequest(
       () => {
         PaxPolicies.assertUpdate(dto);
@@ -127,7 +127,7 @@ export class PaxService {
             birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
 
             // sello de último editor
-            updatedBy: actorId,
+            updatedBy: username,
 
             passport:
               dto.passportNum !== undefined ||
@@ -145,7 +145,7 @@ export class PaxService {
                             : undefined,
 
                         // sello en nested update
-                        updatedBy: actorId,
+                        updatedBy: username,
                       },
                       create: (() => {
                         if (!dto.passportNum || !dto.passportExpirationDate) {
@@ -156,8 +156,8 @@ export class PaxService {
                         return {
                           passportNum: dto.passportNum,
                           expirationDate: new Date(dto.passportExpirationDate),
-                          createdBy: actorId,
-                          updatedBy: actorId,
+                          createdBy: username,
+                          updatedBy: username,
                         };
                       })(),
                     },
@@ -177,7 +177,7 @@ export class PaxService {
                             : undefined,
 
                         // sello en nested update
-                        updatedBy: actorId,
+                        updatedBy: username,
                       },
                       create: (() => {
                         if (!dto.dniNum || !dto.dniExpirationDate) {
@@ -188,8 +188,8 @@ export class PaxService {
                         return {
                           dniNum: dto.dniNum,
                           expirationDate: new Date(dto.dniExpirationDate),
-                          createdBy: actorId,
-                          updatedBy: actorId,
+                          createdBy: username,
+                          updatedBy: username,
                         };
                       })(),
                     },
@@ -202,7 +202,7 @@ export class PaxService {
       this.logger,
       {
         op: 'PaxService.update',
-        actorId,
+        username,
         extras: {
           id,
           passportChanged:
@@ -215,7 +215,7 @@ export class PaxService {
     );
   }
 
-  remove(actorId: string, id: string) {
+  remove(username: string, id: string) {
     return handleRequest(
       async () => {
         return this.prisma.$transaction(async (tx) => {
@@ -227,7 +227,7 @@ export class PaxService {
         });
       },
       this.logger,
-      { op: 'PaxService.remove', actorId, extras: { id } },
+      { op: 'PaxService.remove', username, extras: { id } },
     );
   }
 }

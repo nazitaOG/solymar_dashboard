@@ -19,7 +19,7 @@ export class CruisesService {
    * Nuevo: recibimos actorId (usuario autenticado) para sellar createdBy/updatedBy.
    * Más adelante esto lo hará un middleware y podemos sacar el parámetro.
    */
-  create(actorId: string, createCruiseDto: CreateCruiseDto) {
+  create(username: string, createCruiseDto: CreateCruiseDto) {
     return handleRequest(
       async () => {
         // Validaciones de dominio (igual que antes)
@@ -67,11 +67,11 @@ export class CruisesService {
               amountPaid: createCruiseDto.amountPaid,
               reservationId: createCruiseDto.reservationId,
               currency: createCruiseDto.currency,
-              createdBy: actorId,
-              updatedBy: actorId,
+              createdBy: username,
+              updatedBy: username,
             },
           });
-          await touchReservation(tx, createCruiseDto.reservationId, actorId, {
+          await touchReservation(tx, createCruiseDto.reservationId, username, {
             currency: createCruiseDto.currency,
             totalAdjustment: createCruiseDto.totalPrice,
             paidAdjustment: createCruiseDto.amountPaid,
@@ -82,7 +82,7 @@ export class CruisesService {
       this.logger,
       {
         op: 'CruisesService.create',
-        actorId,
+        username,
         extras: {
           reservationId: createCruiseDto.reservationId,
           embarkationPort: createCruiseDto.embarkationPort,
@@ -133,7 +133,7 @@ export class CruisesService {
     );
   }
 
-  update(actorId: string, id: string, updateCruiseDto: UpdateCruiseDto) {
+  update(username: string, id: string, updateCruiseDto: UpdateCruiseDto) {
     return handleRequest(
       async () => {
         const current = await this.prisma.cruise.findUniqueOrThrow({
@@ -203,10 +203,10 @@ export class CruisesService {
                   ? updateCruiseDto.amountPaid
                   : undefined,
               // sello requerido por el nuevo schema
-              updatedBy: actorId,
+              updatedBy: username,
             },
           });
-          await touchReservation(tx, current.reservationId, actorId, {
+          await touchReservation(tx, current.reservationId, username, {
             currency: current.currency,
             totalAdjustment:
               typeof updateCruiseDto.totalPrice === 'number'
@@ -223,13 +223,13 @@ export class CruisesService {
       this.logger,
       {
         op: 'CruisesService.update',
-        actorId,
+        username,
         extras: { id },
       },
     );
   }
 
-  remove(actorId: string, id: string) {
+  remove(username: string, id: string) {
     return handleRequest(
       async () => {
         return this.prisma.$transaction(async (tx: PrismaClient) => {
@@ -243,7 +243,7 @@ export class CruisesService {
               currency: true,
             },
           });
-          await touchReservation(tx, deleted.reservationId, actorId, {
+          await touchReservation(tx, deleted.reservationId, username, {
             currency: deleted.currency,
             totalAdjustment: -deleted.totalPrice.toNumber(),
             paidAdjustment: -deleted.amountPaid.toNumber(),
@@ -254,7 +254,7 @@ export class CruisesService {
       this.logger,
       {
         op: 'CruisesService.remove',
-        actorId,
+        username,
         extras: { id },
       },
     );

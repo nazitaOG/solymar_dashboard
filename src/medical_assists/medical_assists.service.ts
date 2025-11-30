@@ -14,7 +14,7 @@ export class MedicalAssistsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  create(actorId: string, dto: CreateMedicalAssistDto) {
+  create(username: string, dto: CreateMedicalAssistDto) {
     return handleRequest(
       async () => {
         CommonPricePolicies.assertCreatePrice(dto, 'totalPrice', 'amountPaid', {
@@ -31,12 +31,12 @@ export class MedicalAssistsService {
               totalPrice: dto.totalPrice,
               amountPaid: dto.amountPaid,
               currency: dto.currency,
-              createdBy: actorId,
-              updatedBy: actorId,
+              createdBy: username,
+              updatedBy: username,
             },
           });
 
-          await touchReservation(tx, created.reservationId, actorId, {
+          await touchReservation(tx, created.reservationId, username, {
             currency: created.currency,
             totalAdjustment: Number(created.totalPrice),
             paidAdjustment: Number(created.amountPaid),
@@ -48,7 +48,7 @@ export class MedicalAssistsService {
       this.logger,
       {
         op: 'MedicalAssistsService.create',
-        actorId,
+        username,
         extras: {
           reservationId: dto.reservationId,
           provider: dto.provider,
@@ -98,7 +98,7 @@ export class MedicalAssistsService {
     );
   }
 
-  update(actorId: string, id: string, dto: UpdateMedicalAssistDto) {
+  update(username: string, id: string, dto: UpdateMedicalAssistDto) {
     return handleRequest(
       async () => {
         const current = await this.prisma.medicalAssist.findUniqueOrThrow({
@@ -130,11 +130,11 @@ export class MedicalAssistsService {
                 typeof dto.totalPrice === 'number' ? dto.totalPrice : undefined,
               amountPaid:
                 typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
-              updatedBy: actorId,
+              updatedBy: username,
             },
           });
 
-          await touchReservation(tx, current.reservationId, actorId, {
+          await touchReservation(tx, current.reservationId, username, {
             currency: current.currency,
             totalAdjustment:
               typeof dto.totalPrice === 'number'
@@ -152,7 +152,7 @@ export class MedicalAssistsService {
       this.logger,
       {
         op: 'MedicalAssistsService.update',
-        actorId,
+        username,
         extras: {
           id,
           totalPriceNew:
@@ -170,7 +170,7 @@ export class MedicalAssistsService {
     );
   }
 
-  remove(actorId: string, id: string) {
+  remove(username: string, id: string) {
     return handleRequest(
       async () => {
         return this.prisma.$transaction(async (tx: PrismaClient) => {
@@ -185,7 +185,7 @@ export class MedicalAssistsService {
             },
           });
 
-          await touchReservation(tx, deleted.reservationId, actorId, {
+          await touchReservation(tx, deleted.reservationId, username, {
             currency: deleted.currency,
             totalAdjustment: -deleted.totalPrice.toNumber(),
             paidAdjustment: -deleted.amountPaid.toNumber(),
@@ -197,7 +197,7 @@ export class MedicalAssistsService {
       this.logger,
       {
         op: 'MedicalAssistsService.remove',
-        actorId,
+        username,
         extras: { id },
       },
     );

@@ -22,7 +22,7 @@ export class HotelsController {
 
   @Post()
   create(@GetUser() user: User, @Body() createHotelDto: CreateHotelDto) {
-    return this.hotelsService.create(user.id, createHotelDto);
+    return this.hotelsService.create(user.username, createHotelDto);
   }
 
   @Get(':id')
@@ -41,11 +41,11 @@ export class HotelsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateHotelDto: UpdateHotelDto,
   ) {
-    return this.hotelsService.update(user.id, id, updateHotelDto);
+    return this.hotelsService.update(user.username, id, updateHotelDto);
   }
 
   @Delete(':id')
   remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
-    return this.hotelsService.remove(user.id, id);
+    return this.hotelsService.remove(user.username, id);
   }
 }

@@ -25,7 +25,7 @@ export class ExcursionsController {
     @GetUser() user: User,
     @Body() createExcursionDto: CreateExcursionDto,
   ) {
-    return this.excursionsService.create(user.id, createExcursionDto);
+    return this.excursionsService.create(user.username, createExcursionDto);
   }
 
   @Get(':id')
@@ -44,11 +44,11 @@ export class ExcursionsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateExcursionDto: UpdateExcursionDto,
   ) {
-    return this.excursionsService.update(user.id, id, updateExcursionDto);
+    return this.excursionsService.update(user.username, id, updateExcursionDto);
   }
 
   @Delete(':id')
   remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
-    return this.excursionsService.remove(user.id, id);
+    return this.excursionsService.remove(user.username, id);
   }
 }

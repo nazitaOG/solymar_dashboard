@@ -15,8 +15,8 @@ export class PlanesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // actorId = id del usuario autenticado
-  create(actorId: string, dto: CreatePlaneDto) {
+  // username = nombre de usuario del usuario autenticado
+  create(username: string, dto: CreatePlaneDto) {
     return handleRequest(
       async () => {
         // 1. Política de precios
@@ -37,8 +37,8 @@ export class PlanesService {
               amountPaid: dto.amountPaid,
               currency: dto.currency,
               notes: dto.notes ?? undefined,
-              createdBy: actorId,
-              updatedBy: actorId,
+              createdBy: username,
+              updatedBy: username,
             },
             select: {
               id: true,
@@ -65,13 +65,13 @@ export class PlanesService {
               arrivalDate: seg.arrivalDate,
               airline: seg.airline ?? null,
               flightNumber: seg.flightNumber ?? null,
-              createdBy: actorId,
-              updatedBy: actorId,
+              createdBy: username,
+              updatedBy: username,
             })),
           });
 
           // 5. Ajustar totales de la reserva
-          await touchReservation(tx, plane.reservationId, actorId, {
+          await touchReservation(tx, plane.reservationId, username, {
             currency: plane.currency,
             totalAdjustment: Number(plane.totalPrice),
             paidAdjustment: Number(plane.amountPaid),
@@ -85,7 +85,7 @@ export class PlanesService {
       this.logger,
       {
         op: 'PlanesService.create',
-        actorId,
+        username,
         extras: {
           reservationId: dto.reservationId,
           segments: dto.segments.length,
@@ -153,7 +153,7 @@ export class PlanesService {
   }
 
   // actorId = id del usuario autenticado
-  update(actorId: string, id: string, dto: UpdatePlaneDto) {
+  update(username: string, id: string, dto: UpdatePlaneDto) {
     return handleRequest(
       async () => {
         // 1. Obtener estado actual para cálculos de diferencia de precio
@@ -206,7 +206,7 @@ export class PlanesService {
               amountPaid:
                 typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
               notes: dto.notes ?? undefined,
-              updatedBy: actorId,
+              updatedBy: username,
             },
           });
 
@@ -228,8 +228,8 @@ export class PlanesService {
                 arrivalDate: s.arrivalDate,
                 airline: s.airline ?? null,
                 flightNumber: s.flightNumber ?? null,
-                createdBy: actorId,
-                updatedBy: actorId,
+                createdBy: username,
+                updatedBy: username,
               })),
             });
           }
@@ -238,7 +238,7 @@ export class PlanesService {
           await touchReservation(
             tx as unknown as Omit<PrismaClient, '$transaction'>,
             current.reservationId,
-            actorId,
+            username,
             {
               currency: current.currency,
               totalAdjustment:
@@ -270,7 +270,7 @@ export class PlanesService {
       this.logger,
       {
         op: 'PlanesService.update',
-        actorId,
+        username,
         extras: {
           id,
           totalPriceNew:
@@ -287,7 +287,7 @@ export class PlanesService {
     );
   }
 
-  remove(actorId: string, id: string) {
+  remove(username: string, id: string) {
     return handleRequest(
       async () => {
         return this.prisma.$transaction(async (tx: PrismaClient) => {
@@ -302,7 +302,7 @@ export class PlanesService {
             },
           });
 
-          await touchReservation(tx, deleted.reservationId, actorId, {
+          await touchReservation(tx, deleted.reservationId, username, {
             currency: deleted.currency,
             totalAdjustment: -deleted.totalPrice.toNumber(),
             paidAdjustment: -deleted.amountPaid.toNumber(),
@@ -314,7 +314,7 @@ export class PlanesService {
       this.logger,
       {
         op: 'PlanesService.remove',
-        actorId,
+        username,
         extras: { id },
       },
     );

@@ -24,8 +24,7 @@ export class ReservationsController {
 
   @Post()
   create(@GetUser() user: User, @Body() dto: CreateReservationDto) {
-    dto.userId = user.id; // fuerza que el userId del body sea siempre el del token
-    return this.reservationsService.create(user.id, dto);
+    return this.reservationsService.create(user.username, user.id, dto);
   }
 
   @Get()
@@ -44,11 +43,11 @@ export class ReservationsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateReservationDto,
   ) {
-    return this.reservationsService.update(user.id, id, dto);
+    return this.reservationsService.update(user.username, id, dto);
   }
 
   @Delete(':id')
   remove(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
-    return this.reservationsService.remove(user.id, id);
+    return this.reservationsService.remove(user.username, id);
   }
 }
