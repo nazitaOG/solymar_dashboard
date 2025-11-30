@@ -156,6 +156,7 @@ export class PlanesService {
   update(actorId: string, id: string, dto: UpdatePlaneDto) {
     return handleRequest(
       async () => {
+        // 1. Obtener estado actual para cálculos de diferencia de precio
         const current = await this.prisma.plane.findUniqueOrThrow({
           where: { id },
           select: {
@@ -166,7 +167,8 @@ export class PlanesService {
           },
         });
 
-        // 1) precio
+        // 2. Validaciones de negocio
+        // 2.1 Precio
         CommonPricePolicies.assertUpdatePrice(
           dto,
           { total: current.totalPrice, paid: current.amountPaid },
@@ -175,27 +177,26 @@ export class PlanesService {
           { labels: { total: 'total', paid: 'pagado' } },
         );
 
-        // 2) si vienen segmentos, validamos la lista
+        // 2.2 Segmentos (si vienen en el DTO)
         if (dto.segments) {
           if (dto.segments.length === 0) {
             throw new BadRequestException(`Debe haber al menos 1 segmento.`);
           }
-
           // Validación individual
           dto.segments.forEach((seg, i) => {
             PlaneSegmentPolicies.assertValidSegment(seg, i);
           });
-
           // Validar orden
           PlaneSegmentPolicies.assertSegmentOrder(dto.segments);
-
-          // Validar continuidad
+          // Validar continuidad (fechas y aeropuertos)
           PlaneSegmentPolicies.assertContinuous(dto.segments);
         }
 
+        // 3. Transacción de escritura
         return this.prisma.$transaction(async (tx) => {
-          // 3) actualizar plane
-          const updated = await tx.plane.update({
+          // A) Actualizar datos del Plane (Cabecera)
+          // Nota: Ya no hacemos el 'include' aquí porque los segmentos cambiarán después
+          await tx.plane.update({
             where: { id },
             data: {
               bookingReference: dto.bookingReference ?? undefined,
@@ -206,21 +207,17 @@ export class PlanesService {
                 typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
               notes: dto.notes ?? undefined,
               updatedBy: actorId,
-              // currency NOT updatable — DTO lo permite pero el model no
-            },
-            include: {
-              segments: {
-                orderBy: { segmentOrder: 'asc' },
-              },
             },
           });
 
-          // 4) si vinieron segmentos: reemplazarlos
+          // B) Reemplazo de Segmentos (Estrategia Delete-Insert)
           if (dto.segments) {
+            // Borrar viejos
             await tx.planeSegment.deleteMany({
               where: { planeId: id },
             });
 
+            // Insertar nuevos (con las nuevas fechas corregidas)
             await tx.planeSegment.createMany({
               data: dto.segments.map((s) => ({
                 planeId: id,
@@ -237,7 +234,7 @@ export class PlanesService {
             });
           }
 
-          // 5) reajuste monetario
+          // C) Reajuste de totales en la Reserva padre
           await touchReservation(
             tx as unknown as Omit<PrismaClient, '$transaction'>,
             current.reservationId,
@@ -255,7 +252,19 @@ export class PlanesService {
             },
           );
 
-          return updated;
+          // D) 🔥 FETCH FINAL (LA SOLUCIÓN)
+          // Recuperamos el objeto completo DESPUÉS de haber borrado y creado los segmentos.
+          // Esto garantiza que el frontend reciba los IDs y fechas nuevas.
+          const finalResult = await tx.plane.findUniqueOrThrow({
+            where: { id },
+            include: {
+              segments: {
+                orderBy: { segmentOrder: 'asc' },
+              },
+            },
+          });
+
+          return finalResult;
         });
       },
       this.logger,
