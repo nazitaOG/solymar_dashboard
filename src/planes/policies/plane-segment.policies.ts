@@ -1,4 +1,3 @@
-// src/planes/policies/plane-segment.policies.ts
 import { BadRequestException } from '@nestjs/common';
 
 export interface Segment {
@@ -17,6 +16,13 @@ export class PlaneSegmentPolicies {
     if (!(seg.departure && seg.arrival)) {
       throw new BadRequestException(
         `El segmento #${index ?? '?'} requiere departure y arrival.`,
+      );
+    }
+
+    // 🆕 Validación: Origen y destino iguales
+    if (seg.departure === seg.arrival) {
+      throw new BadRequestException(
+        `El segmento #${index ?? '?'} no puede tener el mismo origen y destino (${seg.departure}).`,
       );
     }
 
@@ -112,7 +118,7 @@ export class PlaneSegmentPolicies {
     }
 
     // Individual
-    segments.forEach((seg, i) => this.assertValidSegment(seg, i));
+    segments.forEach((seg, i) => this.assertValidSegment(seg, i + 1));
 
     // Orden numérico
     this.assertSegmentOrder(segments);
