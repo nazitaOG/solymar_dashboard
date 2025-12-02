@@ -123,9 +123,9 @@ export class MedicalAssistsService {
           const updated = await tx.medicalAssist.update({
             where: { id },
             data: {
-              bookingReference: dto.bookingReference ?? undefined,
-              assistType: dto.assistType ?? undefined,
-              provider: dto.provider ?? undefined,
+              bookingReference: dto.bookingReference ?? '',
+              assistType: dto.assistType ?? '',
+              provider: dto.provider ?? '',
               totalPrice:
                 typeof dto.totalPrice === 'number' ? dto.totalPrice : undefined,
               amountPaid:
