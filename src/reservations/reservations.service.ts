@@ -191,13 +191,13 @@ export class ReservationsService {
     );
   }
 
-  // actorId = id del usuario autenticado
   update(username: string, id: string, dto: UpdateReservationDto) {
     return handleRequest(
       () =>
         this.prisma.$transaction(async (tx) => {
           const data: Parameters<typeof tx.reservation.update>[0]['data'] = {
             ...(dto.state && { state: dto.state }),
+            ...(dto.name && { name: dto.name }),
             updatedBy: username,
           };
 
