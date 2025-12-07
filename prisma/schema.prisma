@@ -19,7 +19,21 @@ model User {
   updatedAt      DateTime  @updatedAt @db.Timestamptz(6)
   reservations   Reservation[]
   roleUsers      RoleUser[]
+  resetTokens    PasswordResetToken[]
 }
+
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenHash String   @db.VarChar(255)
+  expiresAt DateTime
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([tokenHash])
+  @@index([userId])
+}
+
 
 model Role {
   id          String    @id @default(uuid()) @db.Uuid
