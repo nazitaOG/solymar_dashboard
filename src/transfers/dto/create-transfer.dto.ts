@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { Currency, TransportType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { ToDateDay } from '../../common/decorators/date.decorators';
+import { ToDateMinute } from '../../common/decorators/date.decorators';
 import { ToTrim } from '../../common/decorators/string.decorators';
 
 export class CreateTransferDto {
@@ -29,12 +29,12 @@ export class CreateTransferDto {
   destination?: string;
 
   @Type(() => Date)
-  @ToDateDay()
+  @ToDateMinute()
   @IsDate()
   departureDate: Date;
 
   @Type(() => Date)
-  @ToDateDay()
+  @ToDateMinute()
   @IsDate()
   arrivalDate: Date;
 
