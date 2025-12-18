@@ -4,7 +4,7 @@ import { UpdatePlaneDto } from './dto/update-plane.dto';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
 import { CommonPricePolicies } from '../common/policies/price.policies';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { touchReservation } from '../common/db/touch-reservation.db';
 import { NestStructuredLogger } from '../common/logging/structured-logger';
 import { PlaneSegmentPolicies } from './policies/plane-segment.policies';
@@ -27,7 +27,7 @@ export class PlanesService {
         PlaneSegmentPolicies.assertValidSegments(dto.segments);
 
         return this.prisma.$transaction(async (tx: PrismaClient) => {
-          // 3. Crear el vuelo (sin info de tramo)
+          // 3. Crear el vuelo (sin info de tramo todavía)
           const plane = await tx.plane.create({
             data: {
               reservationId: dto.reservationId,
@@ -40,21 +40,11 @@ export class PlanesService {
               createdBy: username,
               updatedBy: username,
             },
-            select: {
-              id: true,
-              reservationId: true,
-              totalPrice: true,
-              amountPaid: true,
-              currency: true,
-              createdAt: true,
-              updatedAt: true,
-              bookingReference: true,
-              provider: true,
-              notes: true,
-            },
+            // Quitamos el 'select' aquí porque vamos a pedir todo al final
           });
 
           // 4. Insertar segmentos
+          // Nota: createMany devuelve un conteo, no los objetos.
           await tx.planeSegment.createMany({
             data: dto.segments.map((seg, i) => ({
               planeId: plane.id,
@@ -77,7 +67,15 @@ export class PlanesService {
             paidAdjustment: Number(plane.amountPaid),
           });
 
-          return plane;
+          // ✅ CAMBIO AQUÍ: Recuperamos el avión completo CON los segmentos
+          return tx.plane.findUniqueOrThrow({
+            where: { id: plane.id },
+            include: {
+              segments: {
+                orderBy: { segmentOrder: 'asc' }, // Ordenamos para que lleguen bien al front
+              },
+            },
+          });
         });
       },
 
@@ -156,7 +154,7 @@ export class PlanesService {
   update(username: string, id: string, dto: UpdatePlaneDto) {
     return handleRequest(
       async () => {
-        // 1. Obtener estado actual para cálculos de diferencia de precio
+        // 1. Obtener estado actual
         const current = await this.prisma.plane.findUniqueOrThrow({
           where: { id },
           select: {
@@ -167,8 +165,7 @@ export class PlanesService {
           },
         });
 
-        // 2. Validaciones de negocio
-        // 2.1 Precio
+        // 2. Validaciones
         CommonPricePolicies.assertUpdatePrice(
           dto,
           { total: current.totalPrice, paid: current.amountPaid },
@@ -177,50 +174,35 @@ export class PlanesService {
           { labels: { total: 'total', paid: 'pagado' } },
         );
 
-        // 2.2 Segmentos (si vienen en el DTO)
         if (dto.segments) {
-          if (dto.segments.length === 0) {
-            throw new BadRequestException(`Debe haber al menos 1 segmento.`);
-          }
-          // Validación individual
+          if (dto.segments.length === 0)
+            throw new BadRequestException(`Mínimo 1 segmento.`);
           dto.segments.forEach((seg, i) => {
             PlaneSegmentPolicies.assertValidSegment(seg, i);
           });
-          // Validar orden
           PlaneSegmentPolicies.assertSegmentOrder(dto.segments);
-          // Validar continuidad (fechas y aeropuertos)
           PlaneSegmentPolicies.assertContinuous(dto.segments);
         }
 
-        // 3. Transacción de escritura
+        // 3. Transacción Optimizada
         return this.prisma.$transaction(async (tx) => {
-          // A) Actualizar datos del Plane (Cabecera)
-          // Nota: Ya no hacemos el 'include' aquí porque los segmentos cambiarán después
-          await tx.plane.update({
-            where: { id },
-            data: {
-              bookingReference: dto.bookingReference ?? undefined,
-              provider: dto.provider ?? undefined,
-              totalPrice:
-                typeof dto.totalPrice === 'number' ? dto.totalPrice : undefined,
-              amountPaid:
-                typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
-              notes: dto.notes ?? undefined,
-              updatedBy: username,
-            },
-          });
+          // ✅ 2. CORRECCIÓN AQUÍ: Usamos 'Prisma.PlaneUpdateInput'
+          const updateData: Prisma.PlaneUpdateInput = {
+            bookingReference: dto.bookingReference ?? undefined,
+            provider: dto.provider ?? undefined,
+            totalPrice:
+              typeof dto.totalPrice === 'number' ? dto.totalPrice : undefined,
+            amountPaid:
+              typeof dto.amountPaid === 'number' ? dto.amountPaid : undefined,
+            notes: dto.notes ?? undefined,
+            updatedBy: username,
+          };
 
-          // B) Reemplazo de Segmentos (Estrategia Delete-Insert)
+          // B) Si hay segmentos, usamos NESTED WRITES
           if (dto.segments) {
-            // Borrar viejos
-            await tx.planeSegment.deleteMany({
-              where: { planeId: id },
-            });
-
-            // Insertar nuevos (con las nuevas fechas corregidas)
-            await tx.planeSegment.createMany({
-              data: dto.segments.map((s) => ({
-                planeId: id,
+            updateData.segments = {
+              deleteMany: {},
+              create: dto.segments.map((s) => ({
                 segmentOrder: s.segmentOrder,
                 departure: s.departure,
                 arrival: s.arrival,
@@ -231,10 +213,21 @@ export class PlanesService {
                 createdBy: username,
                 updatedBy: username,
               })),
-            });
+            };
           }
 
-          // C) Reajuste de totales en la Reserva padre
+          // C) Ejecutamos TODO en una sola llamada
+          const updatedPlane = await tx.plane.update({
+            where: { id },
+            data: updateData,
+            include: {
+              segments: {
+                orderBy: { segmentOrder: 'asc' },
+              },
+            },
+          });
+
+          // D) Reajuste de totales
           await touchReservation(
             tx as unknown as Omit<PrismaClient, '$transaction'>,
             current.reservationId,
@@ -252,37 +245,15 @@ export class PlanesService {
             },
           );
 
-          // D) 🔥 FETCH FINAL (LA SOLUCIÓN)
-          // Recuperamos el objeto completo DESPUÉS de haber borrado y creado los segmentos.
-          // Esto garantiza que el frontend reciba los IDs y fechas nuevas.
-          const finalResult = await tx.plane.findUniqueOrThrow({
-            where: { id },
-            include: {
-              segments: {
-                orderBy: { segmentOrder: 'asc' },
-              },
-            },
-          });
-
-          return finalResult;
+          // E) Retorno directo
+          return updatedPlane;
         });
       },
       this.logger,
       {
         op: 'PlanesService.update',
         username,
-        extras: {
-          id,
-          totalPriceNew:
-            typeof dto.totalPrice === 'number'
-              ? Number(dto.totalPrice)
-              : undefined,
-          amountPaidNew:
-            typeof dto.amountPaid === 'number'
-              ? Number(dto.amountPaid)
-              : undefined,
-          segmentsCount: dto.segments?.length ?? undefined,
-        },
+        extras: { id },
       },
     );
   }
