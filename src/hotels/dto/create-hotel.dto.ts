@@ -8,6 +8,7 @@ import {
   IsNotEmpty,
   MaxLength,
   IsEnum,
+  IsOptional,
 } from 'class-validator';
 import { ToDateDay } from '../../common/decorators/date.decorators';
 import { Type } from 'class-transformer';
@@ -58,9 +59,8 @@ export class CreateHotelDto {
   @IsEnum(Currency)
   currency: Currency;
 
-  @ToTrim()
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(255)
   roomType?: string;
 
