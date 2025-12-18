@@ -198,6 +198,7 @@ export class ReservationsService {
           const data: Parameters<typeof tx.reservation.update>[0]['data'] = {
             ...(dto.state && { state: dto.state }),
             ...(dto.name && { name: dto.name }),
+            ...(dto.notes !== undefined && { notes: dto.notes }),
             updatedBy: username,
           };
 

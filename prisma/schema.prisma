@@ -78,6 +78,7 @@ model Reservation {
   user           User                     @relation(fields: [userId], references: [id])
   currencyTotals ReservationCurrencyTotal[]
   transfers      Transfer[]
+  notes          String?                  @db.Text
 }
 
 model CarRental {
