@@ -121,7 +121,7 @@ model Hotel {
   bookingReference String      @db.VarChar(255)
   totalPrice       Decimal     @db.Decimal(18, 2)
   amountPaid       Decimal     @db.Decimal(18, 2)
-  roomType         String      @db.VarChar(255)
+  roomType         String?      @db.VarChar(255)
   provider         String      @db.VarChar(128)
   reservationId    String      @db.Uuid
   createdAt        DateTime    @default(now()) @db.Timestamptz(6)

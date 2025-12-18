@@ -62,7 +62,7 @@ export class CreateHotelDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  roomType: string;
+  roomType?: string;
 
   @ToTrim()
   @IsString()
