@@ -1,54 +1,83 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Solymar Dashboard — Backend (NestJS + Prisma + PostgreSQL + Docker)
 
-# Solymar Dashboard – Backend (NestJS + Prisma + PostgreSQL + Docker)
+Lightweight backend for reservations built with NestJS, Prisma and PostgreSQL. This README explains how to run the project locally, with Docker or with npm/pnpm, how to run tests, and lists required environment variables.
 
-API de reservas (Pax, Passport/DNI, Reservations, etc.) construida con **NestJS**, **Prisma** y **PostgreSQL**.  
-Se provee **Dockerfile** + **docker-compose** para levantar todo con un solo comando.
+Prerequisites
 
-## Requisitos
+- Docker & docker-compose (recommended)
+- Node.js 22+ (only if running locally without Docker)
+- pnpm or npm (both supported)
 
-- **Docker**
-- **Node.js 22+** (solo si vas a correr fuera de Docker)  
-- **pnpm** (opcional para desarrollo local)
+Quick start (Docker)
 
----
+1. Copy example env: `cp .env.example .env`
+2. Build and start: `docker compose up -d --build`
+3. Check logs: `docker compose logs -f app`
+4. API available at: `http://localhost:3000`
 
-## Primeros pasos
+Run locally (pnpm)
 
-```bash
-# 1) Clonar
-git clone <https://github.com/nazitaOG/solymar_dashboard.git>
-cd solymar_dashboard
+1. Install deps: `pnpm install`
+2. Start PostgreSQL with Docker (optional): `docker compose up -d db`
+3. Run Prisma migrations and generate client:
+   - `pnpm prisma:migrate` or `pnpm prisma migrate dev`
+   - `pnpm prisma:generate`
+4. Start dev server: `pnpm start:dev`
 
-# 2) Crear archivo de entorno
-cp .env.example .env
+Run locally (npm)
 
-# 3) Levantar DB + API con Docker
-docker compose up -d --build
+1. Install deps: `npm install`
+2. Prisma commands:
+   - `npm run prisma:migrate` or `npm run prisma migrate dev`
+   - `npm run prisma:generate`
+3. Start dev server: `npm run start:dev`
 
-# 4) Ver logs de la app
-docker compose logs -f app
+Build & Production
 
-# 5) Probar en el navegador / client HTTP
-http://localhost:3000
+- Build: `pnpm build` or `npm run build`
+- Start production: `pnpm start:prod` or `npm run start:prod` (runs `node dist/main`)
 
+Tests, lint & format
 
-## 🚀 Correr el proyecto en local
+- Run all tests: `pnpm test` or `npm run test`
+- Run a single test file: `pnpm test -- src/path/to/file.spec.ts` or `npm run test -- src/path/to/file.spec.ts`
+- Run a single test by name: `pnpm test -- -t "partial test name"` or `npm run test -- -t "partial test name"`
+- Lint (autofix): `pnpm run lint` or `npm run lint`
+- Format: `pnpm run format` or `npm run format`
 
-### 1) Instalar dependencias
-```bash
-pnpm install
+Prisma
 
-### 2) LEVANTAR LA DB CON DOCKER
-docker compose up -d db
+- Generate client: `pnpm prisma:generate` / `npm run prisma:generate`
+- Run migrations: `pnpm prisma:migrate` / `npm run prisma:migrate`
+- Seed DB: `pnpm prisma:seed` / `npm run prisma:seed`
 
-### 3) Ejecutar migraciones y generar prisma client
-pnpm prisma migrate dev
-pnpm prisma generate
+Docker notes
 
-### 1) Correr en local
-pnpm start:dev
+- Compose file provides app and db services. To rebuild after code changes: `docker compose up -d --build`
+- To run only the DB: `docker compose up -d db`
+- To run migrations from host against container DB, use the Prisma CLI with correct `DATABASE_URL`.
 
+Required environment (example `.env`)
 
+```
+# Postgres connection
+DATABASE_URL=postgresql://postgres:postgres@db:5432/solymar?schema=public
+
+# App
+PORT=3000
+NODE_ENV=development
+
+# Security
+PEPPER=some-random-pepper-value
+JWT_SECRET=some-long-secret-for-jwt
+
+# Optional
+# SENTRY_DSN=...
+```
+
+Security notes
+
+- Keep `PEPPER` and `JWT_SECRET` secret and rotate when necessary.
+- Prefer running DB in Docker for local development to match production.
+
+If you want, I can also add a short `Makefile` or `dev` script to simplify common commands. Committed this README to the repo root.
