@@ -79,5 +79,3 @@ Security notes
 
 - Keep `PEPPER` and `JWT_SECRET` secret and rotate when necessary.
 - Prefer running DB in Docker for local development to match production.
-
-If you want, I can also add a short `Makefile` or `dev` script to simplify common commands. Committed this README to the repo root.
