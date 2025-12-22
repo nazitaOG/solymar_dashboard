@@ -106,6 +106,16 @@ async function main(): Promise<void> {
         updatedBy: SYSTEM_ID,
       },
     }),
+    prisma.user.create({
+      data: {
+        email: 'lopeznazarenoo@gmail.com',
+        username: 'lopeznazarenoo',
+        hashedPassword: await hashPassword('password123', undefined, pepper),
+        isActive: true,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
+    }),
   ]);
 
   // 5) ROLE-USER (M2M)

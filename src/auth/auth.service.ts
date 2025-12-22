@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -14,6 +15,7 @@ import { ValidRoles } from './interfaces/valid-roles.interface';
 import * as crypto from 'crypto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +24,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly getJwtUtils: GetJwtUtils,
+    private readonly mailService: MailService,
   ) {
     this.pepper = this.configService.getOrThrow<string>('PEPPER');
   }
@@ -165,7 +168,7 @@ export class AuthService {
     return handleRequest(async () => {
       const user = await this.prisma.user.findUnique({
         where: { email: dto.email },
-        select: { id: true, isActive: true },
+        select: { id: true, isActive: true, username: true, email: true },
       });
 
       // Mensaje de seguridad (siempre devolvemos lo mismo)
@@ -197,11 +200,19 @@ export class AuthService {
         },
       });
 
-      // TODO: MailService
-      console.log('----------------------------------------------------');
-      console.log(`[EMAIL DEV] Para: ${dto.email}`);
-      console.log(`[EMAIL DEV] Token (RAW): ${rawToken}`);
-      console.log('----------------------------------------------------');
+      // 4. ENVÍO REAL DEL CORREO
+      try {
+        await this.mailService.sendUserResetPassword(
+          user.email,
+          user.username,
+          rawToken,
+        );
+      } catch (error) {
+        throw new InternalServerErrorException(
+          'Error enviando email de recuperación',
+          { cause: error },
+        );
+      }
 
       return responseMessage;
     });
@@ -222,7 +233,7 @@ export class AuthService {
   // ------------------------------------------------------------------
   //  RESET PASSWORD
   // ------------------------------------------------------------------
-  async resetPassword(dto: ResetPasswordDto): Promise<void> {
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
     return handleRequest(async () => {
       // 1. Obtener token validado (DRY)
       // Aquí sí usamos el resultado porque necesitamos el userId
@@ -249,7 +260,7 @@ export class AuthService {
         }),
       ]);
 
-      return;
+      return { message: 'Password reset successfully' };
     });
   }
 
