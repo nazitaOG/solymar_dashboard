@@ -159,51 +159,36 @@ export class AuthService {
   }
 
   // ------------------------------------------------------------------
-  //  FORGOT PASSWORD (Solicitud de cambio)
+  //  FORGOT PASSWORD
   // ------------------------------------------------------------------
-  async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
+  async forgotPassword(dto: ForgotPasswordDto) {
     return handleRequest(async () => {
-      // 1. Buscamos al usuario por email.
-      // Solo traemos lo mínimo indispensable (id y si está activo).
       const user = await this.prisma.user.findUnique({
         where: { email: dto.email },
         select: { id: true, isActive: true },
       });
 
-      // 2. Seguridad Anti-Enumeración (CRÍTICO):
-      // Si el usuario no existe o está bloqueado, NO tiramos error.
-      // Simplemente retornamos 'void' como si todo hubiera ido bien.
-      // ¿Por qué? Para que un atacante no pueda probar 1000 emails y ver cuáles
-      // devuelven "Email no encontrado" y cuáles devuelven "Email enviado".
-      if (!user || !user.isActive) {
-        return;
-      }
+      // Mensaje de seguridad (siempre devolvemos lo mismo)
+      const responseMessage = {
+        message:
+          'Si el correo está registrado, recibirás un enlace de recuperación.',
+      };
 
-      // 3. Limpieza preventiva:
-      // Si el tipo ya pidió 5 veces el reset porque es ansioso, borramos los tokens viejos.
-      // Así no llenamos la tabla de basura y evitamos conflictos.
+      if (!user || !user.isActive) return responseMessage;
+
+      // Limpieza de tokens viejos
       await this.prisma.passwordResetToken.deleteMany({
         where: { userId: user.id },
       });
 
-      // 4. Generación del Token Seguro:
-      // Generamos 32 bytes de entropía pura y lo pasamos a hex.
-      // Este 'rawToken' es el que viaja por email. ES EL SECRETO.
+      // Generación del token
       const rawToken = crypto.randomBytes(32).toString('hex');
+      // DRY: Usamos el helper privado para hashear
+      const tokenHash = this.hashToken(rawToken);
 
-      // 5. Hashing para la DB:
-      // Igual que con las passwords, no guardamos el secreto en plano.
-      // Lo hasheamos con SHA-256 (rápido y eficiente para búsquedas).
-      const tokenHash = crypto
-        .createHash('sha256')
-        .update(rawToken)
-        .digest('hex');
-
-      // 6. Configurar expiración (ej. 1 hora desde ahora)
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 1);
 
-      // 7. Guardar en DB
       await this.prisma.passwordResetToken.create({
         data: {
           tokenHash,
@@ -212,70 +197,51 @@ export class AuthService {
         },
       });
 
-      // 8. Enviar Email (TODO: Conectar tu MailService real acá)
-      // OJO: Al usuario le mandamos el 'rawToken', NO el hash.
-      // El link sería algo como: https://tu-frontend.com/reset-password?token=rawToken
-      // Simulación por consola para que puedas probar ya:
+      // TODO: MailService
       console.log('----------------------------------------------------');
       console.log(`[EMAIL DEV] Para: ${dto.email}`);
-      console.log(`[EMAIL DEV] Token (RAW): ${rawToken}`); // Copia esto para probar el reset
+      console.log(`[EMAIL DEV] Token (RAW): ${rawToken}`);
       console.log('----------------------------------------------------');
 
-      return;
+      return responseMessage;
     });
   }
 
+  // ------------------------------------------------------------------
+  //  VERIFY TOKEN
+  // ------------------------------------------------------------------
+  async verifyToken(token: string) {
+    return handleRequest(async () => {
+      // DRY: Reutilizamos la validación centralizada.
+      // Si pasa esto, significa que el token es válido. Si no, lanza error.
+      await this.getValidTokenRecord(token);
+      return { valid: true };
+    });
+  }
+
+  // ------------------------------------------------------------------
+  //  RESET PASSWORD
+  // ------------------------------------------------------------------
   async resetPassword(dto: ResetPasswordDto): Promise<void> {
     return handleRequest(async () => {
-      // 1. Replicamos el hash:
-      // El token que llega del front es el "raw" (texto plano).
-      // Lo pasamos por SHA-256 y pedimos salida en 'hex' (hexadecimal).
-      // ¿Por qué 'hex'? Porque el hash genera bytes binarios (basura ilegible),
-      // y 'hex' los traduce a un string seguro de caracteres 0-9 y a-f que podemos buscar en la DB.
-      const tokenHash = crypto
-        .createHash('sha256')
-        .update(dto.token)
-        .digest('hex');
+      // 1. Obtener token validado (DRY)
+      // Aquí sí usamos el resultado porque necesitamos el userId
+      const resetToken = await this.getValidTokenRecord(dto.token);
 
-      // 2. Buscamos el token en la base de datos usando ese hash.
-      // Incluimos al usuario para sacar el username y llenar el 'updatedBy' después.
-      const resetToken = await this.prisma.passwordResetToken.findUnique({
-        where: { tokenHash: tokenHash },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      // 3. Validaciones de seguridad:
-      // - Si no encuentra el token (alguien mandó fruta o el token está mal copiado).
-      // - Si la fecha actual es mayor a la de expiración.
-      if (!resetToken || resetToken.expiresAt < new Date()) {
-        throw new BadRequestException('El enlace es inválido o ha expirado.');
-      }
-
-      // 4. Preparamos la nueva contraseña.
-      // Acá NO usamos SHA-256, usamos el algoritmo robusto (Bcrypt/Argon2) con el pepper de la app.
+      // 2. Hash de la nueva contraseña
       const newHashedPassword = await hashPassword(
         dto.password,
         undefined,
         this.pepper,
       );
 
-      // 5. Transacción Atómica (ACID):
-      // Esto asegura integridad: O se actualiza la pass Y se borra el token, o falla todo y no pasa nada.
-      // Borrar el token es clave para evitar "Replay Attacks" (que usen el mismo link dos veces).
+      // 3. Transacción
       await this.prisma.$transaction([
         this.prisma.user.update({
           where: { id: resetToken.userId },
           data: {
             hashedPassword: newHashedPassword,
-            updatedBy: resetToken.user.username, // Dejamos registro de quién hizo el cambio
+            updatedBy: resetToken.user.username,
           },
         }),
         this.prisma.passwordResetToken.delete({
@@ -285,5 +251,38 @@ export class AuthService {
 
       return;
     });
+  }
+
+  // ==================================================================
+  //  PRIVATE HELPERS (DRY & CLEAN CODE)
+  // ==================================================================
+
+  /**
+   * Genera el hash SHA-256 para el token de reseteo.
+   * Centraliza el algoritmo para cambiarlo fácilmente en el futuro.
+   */
+  private hashToken(rawToken: string): string {
+    return crypto.createHash('sha256').update(rawToken).digest('hex');
+  }
+
+  /**
+   * Busca, valida expiración y devuelve el token con el usuario asociado.
+   * Lanza BadRequestException si algo falla.
+   */
+  private async getValidTokenRecord(rawToken: string) {
+    const tokenHash = this.hashToken(rawToken);
+
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: {
+        user: { select: { id: true, username: true } },
+      },
+    });
+
+    if (!resetToken || resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('El enlace es inválido o ha expirado.');
+    }
+
+    return resetToken;
   }
 }
