@@ -103,7 +103,7 @@
       "glob": "^10.5.0",
       "mjml": "^4.15.3",
       "mjml-core": "^4.15.3",
-      "html-minifier": "npm:html-minifier-terser@^7.2.0"
+      "html-minifier": "npm:html-minifier-terser@5.1.1"
     }
   }
 }
