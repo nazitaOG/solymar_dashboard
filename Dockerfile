@@ -1,5 +1,5 @@
 # ---- Build stage ----
-    FROM node:22.19.0-alpine3.22 AS builder
+    FROM node:22.21.0-alpine3.22 AS builder
     WORKDIR /app
     
     RUN apk add --no-cache openssl
@@ -24,7 +24,7 @@
 
     
     # ---- Runtime stage ----
-    FROM node:22.19.0-alpine3.22 AS runner
+    FROM node:22.21.0-alpine3.22 AS runner
     ENV NODE_ENV=production
     ENV TZ=America/Argentina/Buenos_Aires
     STOPSIGNAL SIGINT
