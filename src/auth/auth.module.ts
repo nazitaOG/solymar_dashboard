@@ -4,7 +4,8 @@ import { AuthController } from './auth.controller';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoginThrottleGuard } from './guards/login-throttle/login-throttle.guard';
 import { PassportModule } from '@nestjs/passport';
-import { JwtModule, JwtModuleOptions } from '@nestjs/jwt'; // 👈 1. Importa la interfaz
+// 👇 1. Asegúrate de importar JwtModuleOptions
+import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GetJwtUtils } from './utils/get-jwt.utils';
@@ -21,16 +22,15 @@ import { MailModule } from '../mail/mail.module';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       inject: [ConfigService],
-      // 👇 2. (Opcional) Puedes tipar explícitamente el retorno para más seguridad
+      // 👇 2. Tipado explícito del retorno (: JwtModuleOptions)
       useFactory: (configService: ConfigService): JwtModuleOptions => {
-        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') ?? '1h';
-
         return {
           secret: configService.get<string>('JWT_SECRET'),
           signOptions: {
-            // Leemos el tipo exacto desde la interfaz: "Quiero el tipo de 'expiresIn' que está dentro de 'signOptions'"
-            // Usamos NonNullable porque signOptions es opcional (?) en la interfaz padre.
-            expiresIn: expiresIn as NonNullable<
+            // 👇 3. Casteo "Type-Safe" (Sin usar ANY)
+            // Le decimos a TS: "Convierte este string al tipo exacto que espera expiresIn"
+            expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ??
+              '1h') as NonNullable<
               JwtModuleOptions['signOptions']
             >['expiresIn'],
           },
