@@ -11,15 +11,26 @@ import { User } from '@prisma/client';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { DevOnlyGuard } from './guards/dev-only.guard';
+import { UserRoleGuard } from './guards/user-role/user-role.guard';
+import { RoleProtected } from './decorators/role-protected/role-protected.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { ttl: 600000, limit: 10 } }) // 10 cada 10 min
-  @Auth(ValidRoles.super_admin)
   @Post('register')
+  // 👇 1. ORDEN DE EJECUCIÓN (De izquierda a derecha)
+  @UseGuards(
+    DevOnlyGuard, // 🛑 1º: SI FALLA -> 404 Not Found (Nadie sabe que existe)
+    ThrottlerGuard, // 🛑 2º: SI SPAMEA -> 429 Too Many Requests
+    AuthGuard('jwt'), // 🛑 3º: SI NO TIENE TOKEN -> 401 Unauthorized
+    UserRoleGuard, // 🛑 4º: SI NO ES ADMIN -> 403 Forbidden
+  )
+  // 👇 2. METADATA (Necesaria para que UserRoleGuard sepa qué rol buscar)
+  @RoleProtected(ValidRoles.super_admin)
+  @Throttle({ default: { ttl: 600000, limit: 10 } }) // 10 cada 10 min
   create(@GetUser() actor: User, @Body() dto: CreateUserDto) {
     return this.authService.register(actor.id, dto);
   }

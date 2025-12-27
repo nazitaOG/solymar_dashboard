@@ -75,7 +75,7 @@ async function main(): Promise<void> {
   ]);
 
   // 4) USERS
-  const [user, admin, superAdmin] = await Promise.all([
+  const [user, admin, superAdmin, lopeznazarenoo] = await Promise.all([
     prisma.user.create({
       data: {
         email: 'user@example.com',
@@ -154,6 +154,12 @@ async function main(): Promise<void> {
       {
         roleId: userRole.id,
         userId: superAdmin.id,
+        createdBy: SYSTEM_ID,
+        updatedBy: SYSTEM_ID,
+      },
+      {
+        roleId: superAdminRole.id,
+        userId: lopeznazarenoo.id,
         createdBy: SYSTEM_ID,
         updatedBy: SYSTEM_ID,
       },
