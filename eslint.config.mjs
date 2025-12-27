@@ -26,7 +26,7 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: false,
-        project: ['./tsconfig.seed.json'],
+        project: ['prisma/tsconfig.seed.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },

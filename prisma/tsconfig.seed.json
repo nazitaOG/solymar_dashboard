@@ -7,6 +7,6 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["./seed.ts", "../src/common/security/hash_password.ts"],
+  "include": ["./seed.ts", "./seed.prod.ts", "../src/common/security/hash_password.ts"],
   "exclude": ["../node_modules", "../dist", "../test"]
 }
