@@ -1,36 +1,37 @@
+# Archivo fly.toml FINAL
+# Región: São Paulo (Brasil)
+
 app = "solymar-dashboard"
-primary_region = "iad"
+primary_region = "gru"  # 👈 CAMBIO CLAVE: De 'iad' (USA) a 'gru' (Brasil)
 
 [deploy]
   release_command = "./node_modules/.bin/prisma migrate deploy"
-  seed_command = "ts-node -T prisma/seed.ts"
+  # Seed eliminado por seguridad
 
-# Configuración de la Máquina (Hardware)
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
   memory = "1gb"
   memory_mb = 1024
 
-# Configuración de Servicios (Red) - La forma explícita
 [[services]]
   protocol = "tcp"
   internal_port = 3000
   processes = ["app"]
   
-  # Redirigir puerto 80 a HTTPS (Estándar)
+  # Puerto 80 -> Redirige a HTTPS
   [[services.ports]]
     port = 80
     handlers = ["http"]
     force_https = true
 
-  # Manejar puerto 443 (HTTPS)
+  # Puerto 443 -> Desencripta y pasa al 3000
   [[services.ports]]
     port = 443
     handlers = ["tls", "http"]
 
-  # Chequeo de Salud TCP (Básico y robusto)
+  # Chequeo de Salud TCP
   [[services.tcp_checks]]
     interval = "15s"
-    timeout = "5s"       # Le damos 5s para responder al ping
-    grace_period = "30s" # Esperamos 30s al arranque antes de molestar
+    timeout = "5s"
+    grace_period = "30s"
