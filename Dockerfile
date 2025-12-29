@@ -45,5 +45,5 @@
     EXPOSE 3000
     
     ENTRYPOINT ["/sbin/tini","--"]
-    CMD ["sh","-lc","pnpm dlx prisma generate && pnpm dlx prisma migrate deploy && if [ \"$SEED\" = \"true\" ]; then node dist/prisma/seed.js; fi && node dist/main.js"]
+    CMD ["sh","-lc","pnpm dlx prisma@6.14.0 generate && pnpm dlx prisma@6.14.0 migrate deploy && if [ \"$SEED\" = \"true\" ]; then node dist/prisma/seed.js; fi && node dist/main.js"]
     
