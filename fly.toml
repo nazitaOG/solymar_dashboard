@@ -12,12 +12,11 @@ primary_region = "iad"
   internal_port = 3000
   min_machines_running = 0 
   processes = ["app"]
-  [[http_service.checks]]
+  [[services.tcp_checks]]
     grace_period = "30s"
     interval = "15s"
+    restart_limit = 0
     timeout = "2s"
-    method = "GET"
-    path = "/api"   # Apunta a /api porque tienes setGlobalPrefix('api')
 
 [[vm]]
   cpu_kind = "shared"

@@ -120,7 +120,7 @@ async function bootstrap() {
   prisma.enableShutdownHooks(app);
 
   // Escuchar en 0.0.0.0 es vital para Fly.io
-  await app.listen(port, '0.0.0.0');
+  await app.listen(port, '::');
   console.log(`Server running on port ${port}`);
 }
 void bootstrap();
