@@ -1,4 +1,4 @@
-// main.ts
+// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -6,9 +6,8 @@ import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { PrismaService } from './common/prisma/prisma.service';
 
-// Tipos para CORS (evita any y arregla eslint @typescript-eslint/no-unsafe-*)
+// Tipos para CORS
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
-// alternativamente: import type { CorsOptions } from 'cors';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -26,25 +25,35 @@ async function bootstrap() {
         ? {
             useDefaults: true,
             directives: {
+              // 👇 AQUÍ ESTÁN LAS CORRECCIONES:
+              // Agregamos comillas simples dentro de las dobles: "'valor'"
+
               // controla el origen por defecto
-              'default-src': ['self'],
-              // dónde pueden cargarse imágenes
-              'img-src': ['self', 'data:', 'https:'],
+              'default-src': ["'self'"],
+
+              // dónde pueden cargarse imágenes (data: y https: NO llevan comillas, self SÍ)
+              'img-src': ["'self'", 'data:', 'https:'],
+
               // scripts ejecutables
-              'script-src': ['self'],
-              // hojas de estilo (idealmente usar nonces/hashes en prod)
-              'style-src': ['self', 'unsafe-inline'],
-              // conexiones salientes desde páginas servidas por tu API
-              'connect-src': ['self'],
+              'script-src': ["'self'"],
+
+              // hojas de estilo
+              'style-src': ["'self'", "'unsafe-inline'"],
+
+              // conexiones salientes
+              'connect-src': ["'self'"],
+
               // deshabilita object/embed/applet
-              'object-src': ['none'],
+              'object-src': ["'none'"],
+
               // restringe <base>
-              'base-uri': ['self'],
+              'base-uri': ["'self'"],
+
               // anti-clickjacking
-              'frame-ancestors': ['none'],
+              'frame-ancestors': ["'none'"],
             },
           }
-        : false, // en dev desactivamos CSP para no pelear con HMR/evals
+        : false, // en dev desactivamos CSP
       crossOriginEmbedderPolicy: false,
       referrerPolicy: { policy: 'no-referrer' },
     }),
@@ -106,10 +115,12 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // ===== Graceful shutdown (Nest + Prisma) =====
-  app.enableShutdownHooks(); // habilita manejo de SIGTERM/SIGINT en Nest
+  app.enableShutdownHooks();
   const prisma = app.get(PrismaService);
-  prisma.enableShutdownHooks(app); // enlaza 'beforeExit' de Prisma -> app.close()
+  prisma.enableShutdownHooks(app);
 
+  // Escuchar en 0.0.0.0 es vital para Fly.io
   await app.listen(port, '0.0.0.0');
+  console.log(`🚀 Server running on port ${port}`);
 }
 void bootstrap();
