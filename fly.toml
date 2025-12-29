@@ -2,7 +2,7 @@ app = "solymar-dashboard"
 primary_region = "iad"
 
 [deploy]
-release_command = "npx prisma migrate deploy"
+release_command = "npx prisma@6.14.0 migrate deploy"
 seed_command = "ts-node -T prisma/seed.ts"
 
 [http_service]
