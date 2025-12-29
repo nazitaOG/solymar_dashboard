@@ -110,6 +110,6 @@ async function bootstrap() {
   const prisma = app.get(PrismaService);
   prisma.enableShutdownHooks(app); // enlaza 'beforeExit' de Prisma -> app.close()
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 void bootstrap();
