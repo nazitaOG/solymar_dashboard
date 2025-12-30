@@ -297,17 +297,29 @@ export class ReservationsService {
   }
 
   // username = nombre de usuario del usuario autenticado
-  remove(username: string, id: string) {
+  // reservations.service.ts
+
+  async remove(username: string, id: string) {
     return handleRequest(
-      () =>
-        this.prisma.reservation.delete({
-          where: { id },
-          include: {
-            paxReservations: {
-              include: { pax: { include: { passport: true, dni: true } } },
-            },
-          },
-        }),
+      async () => {
+        // Usamos una transacción para que si algo falla, no se borre nada a medias
+        return await this.prisma.$transaction(async (tx) => {
+          // 1. Borramos los vínculos con los pasajeros en la tabla intermedia.
+          // Esto NO borra al pasajero (Pax), solo la relación con esta reserva.
+          // Al hacer esto primero, el Trigger de la DB no saltará porque
+          // estamos vaciando la reserva antes de eliminarla.
+          await tx.paxReservation.deleteMany({
+            where: { reservationId: id },
+          });
+
+          // 2. Ahora borramos la reserva. ]
+          // Gracias al 'onDelete: Cascade' de tu schema, Prisma/Postgres
+          // borrarán automáticamente Hoteles, Aviones, Totales, etc.
+          return await tx.reservation.delete({
+            where: { id },
+          });
+        });
+      },
       this.logger,
       {
         op: 'ReservationsService.remove',
