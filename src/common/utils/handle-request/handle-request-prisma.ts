@@ -39,6 +39,7 @@ function relatedModelFromCause(cause?: string): string | undefined {
 }
 
 export function handlePrismaErrors(error: unknown): never {
+  // Si no es un error de Prisma, lo dejamos pasar al siguiente manejador
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) throw error;
 
   const code = error.code;
@@ -47,60 +48,79 @@ export function handlePrismaErrors(error: unknown): never {
   const cause = metaString(error.meta, 'cause');
   const constraint = metaString(error.meta, 'constraint');
 
+  // --- 🚨 CAPTURA DE TRIGGERS POSTGRES (P0001) ---
+  // Prisma suele envolver errores de triggers en P2010 (Raw query failed)
+  // o P2030. Buscamos el mensaje que definiste en el trigger.
+  if (
+    code === 'P2010' ||
+    code === 'P2030' ||
+    code === 'P2002' ||
+    code === 'P2003'
+  ) {
+    const rawMessage = error.message;
+    if (rawMessage.includes('No se puede eliminar')) {
+      // Extraemos la última línea que suele ser el mensaje del error de Postgres
+      const lines = rawMessage.split('\n');
+      const cleanMsg =
+        lines.find((l) => l.includes('No se puede eliminar')) || rawMessage;
+      throw new BadRequestException(cleanMsg.trim());
+    }
+  }
+
   if (code === 'P2002') {
-    const msg = `Duplicate value for unique constraint${
+    const msg = `Valor duplicado para el campo único${
       target ? ` (${target})` : ''
-    }${model ? ` in ${model}` : ''}`;
+    }${model ? ` en ${model}` : ''}`;
     throw new ConflictException(msg);
   }
 
   if (code === 'P2025') {
     const related = relatedModelFromCause(cause);
     const base = model
-      ? `Record not found in model ${model}`
-      : 'Record not found';
+      ? `Registro no encontrado en ${model}`
+      : 'Registro no encontrado';
     const msg = related
-      ? `Related ${related} record not found${
-          model ? ` (used in model ${model})` : ''
+      ? `Registro relacionado ${related} no encontrado${
+          model ? ` (usado en ${model})` : ''
         }`
       : base;
     throw new NotFoundException(msg);
   }
 
   if (code === 'P2003') {
-    let msg = `Foreign key reference failed${model ? ` in ${model}` : ''}`;
-    if (constraint?.includes('user_id')) msg = 'User not found';
-    else if (constraint?.includes('position_id')) msg = 'Position not found';
-    throw new NotFoundException(msg);
+    let msg = `Fallo en la referencia de clave externa${model ? ` en ${model}` : ''}`;
+    if (constraint?.includes('user_id')) msg = 'Usuario no encontrado';
+    else if (constraint?.includes('paxId')) msg = 'Pasajero no encontrado';
+    throw new BadRequestException(msg);
   }
 
   if (code === 'P2001') {
     const msg = model
-      ? `Record not found in model ${model}`
-      : 'Record not found';
+      ? `Registro no encontrado en ${model}`
+      : 'Registro no encontrado';
     throw new NotFoundException(msg);
   }
 
-  if (
-    [
-      'P2004',
-      'P2005',
-      'P2006',
-      'P2007',
-      'P2008',
-      'P2009',
-      'P2010',
-      'P2011',
-      'P2012',
-      'P2013',
-      'P2016',
-      'P2017',
-      'P2019',
-      'P2020',
-      'P2026',
-    ].includes(code)
-  ) {
-    const msg = `Invalid data or query (${code})${model ? ` in ${model}` : ''}`;
+  // Lista de errores de validación de datos
+  const badRequestCodes = [
+    'P2004',
+    'P2005',
+    'P2006',
+    'P2007',
+    'P2008',
+    'P2009',
+    'P2011',
+    'P2012',
+    'P2013',
+    'P2016',
+    'P2017',
+    'P2019',
+    'P2020',
+    'P2026',
+  ];
+
+  if (badRequestCodes.includes(code)) {
+    const msg = `Datos o consulta inválida (${code})${model ? ` en ${model}` : ''}`;
     throw new BadRequestException(msg);
   }
 
