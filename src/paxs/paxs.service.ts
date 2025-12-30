@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreatePaxDto } from './dto/create-pax.dto';
 import { UpdatePaxDto } from './dto/update-pax.dto';
 import { handleRequest } from '../common/utils/handle-request/handle-request';
@@ -218,6 +222,15 @@ export class PaxService {
   remove(username: string, id: string) {
     return handleRequest(
       async () => {
+        // Primero verificamos existencia para evitar un P2025 de Prisma
+        const existing = await this.prisma.pax.findUnique({
+          where: { id },
+          select: { id: true },
+        });
+        if (!existing) {
+          throw new NotFoundException('Registro no encontrado en Pax');
+        }
+
         return this.prisma.$transaction(async (tx) => {
           // 1️⃣ Eliminar documentos asociados primero
           await tx.dni.deleteMany({ where: { paxId: id } });
