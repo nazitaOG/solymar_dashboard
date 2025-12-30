@@ -39,7 +39,34 @@ function relatedModelFromCause(cause?: string): string | undefined {
 }
 
 export function handlePrismaErrors(error: unknown): never {
-  // Si no es un error de Prisma, lo dejamos pasar al siguiente manejador
+  // Capturamos el mensaje crudo antes de filtrar por tipo de clase
+  const rawMessage = error instanceof Error ? error.message : '';
+
+  // 🚨 CAPTURA DE TRIGGERS (Incluso si Prisma no reconoce el código)
+  // Buscamos tanto tu mensaje personalizado como el de la reserva
+  if (
+    rawMessage.includes('No se puede eliminar') ||
+    rawMessage.includes('no puede quedar sin pasajeros')
+  ) {
+    const lines = rawMessage.split('\n');
+    const cleanMsg =
+      lines.find(
+        (l) =>
+          l.includes('No se puede eliminar') ||
+          l.includes('no puede quedar sin pasajeros'),
+      ) || rawMessage;
+
+    // Normalizamos el mensaje para el usuario final
+    let userMsg = cleanMsg.trim();
+    if (userMsg.includes('no puede quedar sin pasajeros')) {
+      userMsg =
+        'No se puede eliminar: el pasajero es el único en una reserva activa. Por favor, elimine primero la reserva.';
+    }
+
+    throw new BadRequestException(userMsg);
+  }
+
+  // Si no es un error conocido de Prisma después de chequear triggers, salimos
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) throw error;
 
   const code = error.code;
@@ -47,25 +74,6 @@ export function handlePrismaErrors(error: unknown): never {
   const target = metaTarget(error.meta);
   const cause = metaString(error.meta, 'cause');
   const constraint = metaString(error.meta, 'constraint');
-
-  // --- 🚨 CAPTURA DE TRIGGERS POSTGRES (P0001) ---
-  // Prisma suele envolver errores de triggers en P2010 (Raw query failed)
-  // o P2030. Buscamos el mensaje que definiste en el trigger.
-  if (
-    code === 'P2010' ||
-    code === 'P2030' ||
-    code === 'P2002' ||
-    code === 'P2003'
-  ) {
-    const rawMessage = error.message;
-    if (rawMessage.includes('No se puede eliminar')) {
-      // Extraemos la última línea que suele ser el mensaje del error de Postgres
-      const lines = rawMessage.split('\n');
-      const cleanMsg =
-        lines.find((l) => l.includes('No se puede eliminar')) || rawMessage;
-      throw new BadRequestException(cleanMsg.trim());
-    }
-  }
 
   if (code === 'P2002') {
     const msg = `Valor duplicado para el campo único${
@@ -101,7 +109,6 @@ export function handlePrismaErrors(error: unknown): never {
     throw new NotFoundException(msg);
   }
 
-  // Lista de errores de validación de datos
   const badRequestCodes = [
     'P2004',
     'P2005',

@@ -219,24 +219,25 @@ export class PaxService {
     );
   }
 
-  remove(username: string, id: string) {
+  async remove(username: string, id: string) {
     return handleRequest(
       async () => {
-        // Primero verificamos existencia para evitar un P2025 de Prisma
+        // 1. Verificamos existencia (esto está bien para dar un error limpio)
         const existing = await this.prisma.pax.findUnique({
           where: { id },
           select: { id: true },
         });
+
         if (!existing) {
           throw new NotFoundException('Registro no encontrado en Pax');
         }
 
-        return this.prisma.$transaction(async (tx) => {
-          // 1️⃣ Eliminar documentos asociados primero
-          await tx.dni.deleteMany({ where: { paxId: id } });
-          await tx.passport.deleteMany({ where: { paxId: id } });
-          // 2️⃣ Luego eliminar el pasajero
-          return tx.pax.delete({ where: { id } });
+        // 2. Borramos ÚNICAMENTE al pasajero.
+        // No hace falta $transaction para una sola operación.
+        // La base de datos se encargará de borrar Dni y Passport
+        // automáticamente gracias al ON DELETE CASCADE.
+        return this.prisma.pax.delete({
+          where: { id },
         });
       },
       this.logger,
