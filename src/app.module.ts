@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ReservationsModule } from './reservations/reservations.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import * as Joi from 'joi';
 import { PaxModule } from './paxs/paxs.module';
 import { HotelsModule } from './hotels/hotels.module';
@@ -13,6 +14,7 @@ import { MedicalAssistsModule } from './medical_assists/medical_assists.module';
 import { AuthModule } from './auth/auth.module';
 import { CarRentalsModule } from './car-rentals/car-rentals.module';
 import { MailModule } from './mail/mail.module';
+import { CleanupService } from './tasks/cleanup.service';
 
 @Module({
   imports: [
@@ -52,6 +54,7 @@ import { MailModule } from './mail/mail.module';
         abortEarly: false, // muestra todos los errores de una
       },
     }),
+    ScheduleModule.forRoot(),
     PaxModule,
     HotelsModule,
     PlanesModule,
@@ -63,5 +66,6 @@ import { MailModule } from './mail/mail.module';
     CarRentalsModule,
     MailModule,
   ],
+  providers: [CleanupService],
 })
 export class AppModule {}
