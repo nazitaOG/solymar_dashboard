@@ -48,13 +48,13 @@ export class ReservationsService {
             data: {
               userId: actorId,
               state: dto.state,
-              createdBy: actorId,
-              updatedBy: actorId,
+              createdBy: username,
+              updatedBy: username,
               paxReservations: {
                 create: paxIds.map((paxId) => ({
                   pax: { connect: { id: paxId } },
-                  createdBy: actorId,
-                  updatedBy: actorId,
+                  createdBy: username,
+                  updatedBy: username,
                 })),
               },
               currencyTotals: {
