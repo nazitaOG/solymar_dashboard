@@ -15,7 +15,7 @@ export class CleanupService {
   ) {}
 
   // Se ejecuta todos los días a las 4 AM
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
   async handleCron() {
     // 1. VERIFICACIÓN DE SEGURIDAD (El "Interruptor")
     const isDemoMode =
