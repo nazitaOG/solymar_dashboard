@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { seed } from '../../prisma/seed.demo';
 
 @Injectable()
 export class CleanupService {
@@ -14,7 +15,7 @@ export class CleanupService {
   ) {}
 
   // Se ejecuta todos los días a las 4 AM
-  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  @Cron(CronExpression.EVERY_10_MINUTES)
   async handleCron() {
     // 1. VERIFICACIÓN DE SEGURIDAD (El "Interruptor")
     const isDemoMode =
@@ -30,34 +31,10 @@ export class CleanupService {
     );
 
     try {
-      await this.cleanDatabase();
+      await seed(this.prisma);
       this.logger.log('✅ Base de datos purgada exitosamente.');
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        this.logger.error(
-          `❌ Error crítico en purga: ${error.message}`,
-          error.stack,
-        );
-      } else {
-        this.logger.error(
-          '❌ Error desconocido en purga',
-          String(error as string),
-        );
-      }
+    } catch (error) {
+      this.logger.error('❌ Error ejecutando seed.demo:', error);
     }
-  }
-
-  private async cleanDatabase() {
-    // Transacción para borrar todo o nada
-    await this.prisma.$transaction([
-      // AQUI AJUSTA LOS NOMBRES SEGÚN TU SCHEMA.PRISMA SI DIFIEREN
-      this.prisma.reservation.deleteMany(),
-
-      // 2. ELIMINAR PASAJEROS (PAX)
-      // Esto disparará CASCADE a:
-      // - Dni, Passport, PaxReservation (si quedara alguna)
-      this.prisma.pax.deleteMany(),
-    ]);
-    this.logger.debug('✨ Tablas limpiadas correctamente.');
   }
 }
