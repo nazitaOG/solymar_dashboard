@@ -1,12 +1,20 @@
 {
-  "extends": "../tsconfig.json",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "rootDir": "../",             
-    "outDir": "../dist/prisma",
+    "module": "commonjs",
+    "target": "ES2021",
+    "rootDir": ".", 
+    "outDir": "./dist",
     "declaration": false,
+    "noEmit": false,
     "types": ["node"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "esModuleInterop": true
   },
-  "include": ["./seed.ts", "./seed.demo.ts", "./seed.prod.ts", "../src/common/security/hash_password.ts"],
-  "exclude": ["../node_modules", "../dist", "../test"]
+  "include": [
+    "prisma/seed.demo.ts", 
+    "prisma/seed.ts", 
+    "src/common/security/hash_password.ts"
+  ],
+  "exclude": ["node_modules", "dist", "test"]
 }
