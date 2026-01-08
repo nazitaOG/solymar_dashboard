@@ -60,4 +60,4 @@
     # 1. Usa ./node_modules/.bin/prisma (local) -> Cero descargas.
     # 2. Solo hace 'migrate deploy' -> Rápido.
     # 3. Corre el seed si hace falta y arranca la app.
-    CMD ["sh","-lc","./node_modules/.bin/prisma migrate deploy && if [ \"$SEED\" = \"true\" ]; then node dist/prisma/seed.js; fi && node dist/main.js"]
+    CMD ["sh","-lc","ls -R dist && ./node_modules/.bin/prisma migrate deploy && if [ \"$SEED\" = \"true\" ]; then node dist/prisma/seed.js; fi && node dist/main.js"]
