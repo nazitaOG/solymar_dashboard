@@ -89,27 +89,6 @@ export class PlaneSegmentPolicies {
   }
 
   //
-  // 4) Validar continuidad geográfica
-  //
-  static assertContinuous(segments: Segment[]) {
-    const sorted = [...segments].sort(
-      (a, b) => a.segmentOrder - b.segmentOrder,
-    );
-
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const a = sorted[i];
-      const b = sorted[i + 1];
-
-      if (a.arrival !== b.departure) {
-        throw new BadRequestException(
-          `Ruta inválida: el tramo #${a.segmentOrder} termina en "${a.arrival}", ` +
-            `pero el tramo #${b.segmentOrder} empieza en "${b.departure}".`,
-        );
-      }
-    }
-  }
-
-  //
   // 5) VALIDACIÓN COMPLETA
   //
   static assertValidSegments(segments: Segment[]) {
@@ -125,8 +104,5 @@ export class PlaneSegmentPolicies {
 
     // Fechas sin superposiciones
     this.assertNoOverlap(segments);
-
-    // Continuidad geográfica
-    this.assertContinuous(segments);
   }
 }

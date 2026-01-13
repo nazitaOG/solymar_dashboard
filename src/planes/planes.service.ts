@@ -181,7 +181,6 @@ export class PlanesService {
             PlaneSegmentPolicies.assertValidSegment(seg, i);
           });
           PlaneSegmentPolicies.assertSegmentOrder(dto.segments);
-          PlaneSegmentPolicies.assertContinuous(dto.segments);
         }
 
         // 3. Transacción Optimizada
