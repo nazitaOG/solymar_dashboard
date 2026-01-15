@@ -273,6 +273,8 @@
     name            String
     birthDate       DateTime
     nationality     String
+    email           String?          @db.VarChar(255)
+    phoneNumber     String?          @db.VarChar(50)
     createdAt       DateTime         @default(now()) @db.Timestamptz(6)
     createdBy       String
     updatedBy       String
