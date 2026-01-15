@@ -10,7 +10,7 @@ import {
   IsEmail,
   IsPhoneNumber,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { TransformFnParams, Type, Transform } from 'class-transformer';
 import { ToDateDay } from '../../common/decorators/date.decorators';
 import { ToTrim, ToUpperTrim } from '../../common/decorators/string.decorators';
 import { IsFutureOrToday } from '../validators/is-future-or-today.validator';
@@ -86,9 +86,19 @@ export class CreatePaxDto {
   email?: string;
 
   @IsOptional()
-  @ToTrim()
   @IsString()
   @MaxLength(50)
-  @IsPhoneNumber(null, { message: 'El número de teléfono no es válido' })
+  @Transform(({ value }: TransformFnParams): string | null | undefined => {
+    if (typeof value === 'string') {
+      // Elimina todos los espacios en blanco y devuelve el string limpio
+      return value.replace(/\s+/g, '');
+    }
+    // Si es null o undefined, lo devuelve tal cual
+    return value;
+  })
+  @IsPhoneNumber(null, {
+    message:
+      'El número de teléfono no es válido, debe incluir el código de país',
+  })
   phoneNumber?: string;
 }
