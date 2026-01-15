@@ -7,6 +7,8 @@ import {
   IsNotEmpty,
   MaxLength,
   IsOptional,
+  IsEmail,
+  IsPhoneNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ToDateDay } from '../../common/decorators/date.decorators';
@@ -80,11 +82,13 @@ export class CreatePaxDto {
   @ToTrim()
   @IsString()
   @MaxLength(255)
+  @IsEmail({}, { message: 'El formato del email es inválido' })
   email?: string;
 
   @IsOptional()
   @ToTrim()
   @IsString()
   @MaxLength(50)
+  @IsPhoneNumber(null, { message: 'El número de teléfono no es válido' })
   phoneNumber?: string;
 }
