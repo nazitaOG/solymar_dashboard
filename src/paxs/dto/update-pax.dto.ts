@@ -11,6 +11,8 @@ export class UpdatePaxDto extends PartialType(CreatePaxDto) {
     'passportExpirationDate',
     'dniNum',
     'dniExpirationDate',
+    'email',
+    'phoneNumber',
   ])
   private _atLeastOne!: true;
 }

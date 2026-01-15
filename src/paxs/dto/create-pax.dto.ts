@@ -6,6 +6,7 @@ import {
   ValidateIf,
   IsNotEmpty,
   MaxLength,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ToDateDay } from '../../common/decorators/date.decorators';
@@ -74,4 +75,16 @@ export class CreatePaxDto {
   @IsDateString()
   @IsFutureOrToday()
   dniExpirationDate?: string;
+
+  @IsOptional()
+  @ToTrim()
+  @IsString()
+  @MaxLength(255)
+  email?: string;
+
+  @IsOptional()
+  @ToTrim()
+  @IsString()
+  @MaxLength(50)
+  phoneNumber?: string;
 }
