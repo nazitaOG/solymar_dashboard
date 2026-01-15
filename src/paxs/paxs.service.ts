@@ -38,7 +38,8 @@ export class PaxService {
             name: dto.name,
             birthDate: new Date(dto.birthDate),
             nationality: dto.nationality.toUpperCase(),
-
+            email: dto.email ?? undefined,
+            phoneNumber: dto.phoneNumber ?? undefined,
             createdBy: username,
             updatedBy: username,
 
@@ -132,6 +133,9 @@ export class PaxService {
 
             // sello de último editor
             updatedBy: username,
+            email: dto.email !== undefined ? dto.email : undefined,
+            phoneNumber:
+              dto.phoneNumber !== undefined ? dto.phoneNumber : undefined,
 
             passport:
               dto.passportNum !== undefined ||
