@@ -32,6 +32,7 @@ export class CruisesService {
             labels: { a: 'embarque', b: 'llegada' },
             ignoreCase: true,
             trim: true,
+            allowEqual: true,
           },
         );
 
@@ -161,6 +162,7 @@ export class CruisesService {
             labels: { a: 'embarque', b: 'llegada' },
             ignoreCase: true,
             trim: true,
+            allowEqual: true,
           },
         );
 

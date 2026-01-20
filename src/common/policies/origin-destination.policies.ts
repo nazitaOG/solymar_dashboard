@@ -1,22 +1,24 @@
-// src/common/policies/common-origin-destination.policies.ts
 import { BadRequestException } from '@nestjs/common';
 
 type RequireMode = 'both' | 'any' | 'none';
 
-type OriginDestinationOptions = {
-  required?: RequireMode; // presencia requerida de los campos
-  ignoreCase?: boolean; // compara case-insensitive
-  trim?: boolean; // recorta espacios antes de comparar
-  labels?: { a?: string; b?: string }; // nombres de campos para mensajes
+export type OriginDestinationOptions = {
+  required?: RequireMode;
+  ignoreCase?: boolean;
+  trim?: boolean;
+  allowEqual?: boolean;
+  labels?: { a?: string; b?: string };
 };
 
 function coerceString(v: unknown): string | undefined {
-  if (typeof v === 'string') return v;
-  return undefined;
+  return typeof v === 'string' ? v : undefined;
 }
 
-function getValue<T, K extends keyof T>(obj: T, key: K): unknown {
-  return obj[key] as unknown;
+/**
+ * Acceso seguro a propiedades sin usar 'any'
+ */
+function getValue<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key];
 }
 
 export class CommonOriginDestinationPolicies {
@@ -24,40 +26,39 @@ export class CommonOriginDestinationPolicies {
     aRaw: unknown,
     bRaw: unknown,
     opts: Required<
-      Pick<OriginDestinationOptions, 'required' | 'ignoreCase' | 'trim'>
+      Pick<
+        OriginDestinationOptions,
+        'required' | 'ignoreCase' | 'trim' | 'allowEqual'
+      >
     > & {
       aLbl: string;
       bLbl: string;
     },
   ): void {
-    const { required, ignoreCase, trim, aLbl, bLbl } = opts;
+    const { required, ignoreCase, trim, allowEqual, aLbl, bLbl } = opts;
 
-    // 1) Presencia según modo
-    if (required === 'both') {
-      if (aRaw === undefined || bRaw === undefined) {
-        throw new BadRequestException(`Campos requeridos: ${aLbl} y ${bLbl}.`);
-      }
-    } else if (required === 'any') {
-      if (aRaw === undefined && bRaw === undefined) {
-        throw new BadRequestException(
-          `Debe especificar al menos uno: ${aLbl} o ${bLbl}.`,
-        );
-      }
+    // 1) Presencia según modo (check de null/undefined para seguridad de DB)
+    const isAPresent = aRaw !== undefined && aRaw !== null;
+    const isBPresent = bRaw !== undefined && bRaw !== null;
+
+    if (required === 'both' && (!isAPresent || !isBPresent)) {
+      throw new BadRequestException(`Campos requeridos: ${aLbl} y ${bLbl}.`);
+    } else if (required === 'any' && !isAPresent && !isBPresent) {
+      throw new BadRequestException(
+        `Debe especificar al menos uno: ${aLbl} o ${bLbl}.`,
+      );
     }
-    // 'none' => no exige presencia
 
-    // 2) Tipos: si vienen, deben ser string (la val de contenido la resuelven los DTOs)
-    const a = aRaw === undefined ? undefined : coerceString(aRaw);
-    const b = bRaw === undefined ? undefined : coerceString(bRaw);
+    // 2) Coerción a string
+    const a = isAPresent ? coerceString(aRaw) : undefined;
+    const b = isBPresent ? coerceString(bRaw) : undefined;
 
-    if (aRaw !== undefined && a === undefined) {
+    if (isAPresent && a === undefined)
       throw new BadRequestException(`${aLbl} debe ser un string.`);
-    }
-    if (bRaw !== undefined && b === undefined) {
+    if (isBPresent && b === undefined)
       throw new BadRequestException(`${bLbl} debe ser un string.`);
-    }
 
-    // 3) Igualdad (solo si ambos presentes)
+    // 3) Comparación de igualdad
     if (a !== undefined && b !== undefined) {
       const norm = (s: string) => {
         let out = s;
@@ -65,29 +66,11 @@ export class CommonOriginDestinationPolicies {
         if (ignoreCase) out = out.toLowerCase();
         return out;
       };
-      if (norm(a) === norm(b)) {
+
+      if (!allowEqual && norm(a) === norm(b)) {
         throw new BadRequestException(`${aLbl} debe ser distinto a ${bLbl}.`);
       }
     }
-  }
-
-  static assertDifferent<T, KA extends keyof T, KB extends keyof T>(
-    dto: T,
-    aKey: KA,
-    bKey: KB,
-    opts?: OriginDestinationOptions,
-  ): void {
-    const required: RequireMode = opts?.required ?? 'both';
-    const ignoreCase = opts?.ignoreCase ?? true;
-    const trim = opts?.trim ?? true;
-
-    const aLbl = opts?.labels?.a ?? String(aKey);
-    const bLbl = opts?.labels?.b ?? String(bKey);
-
-    const aValue = getValue(dto, aKey);
-    const bValue = getValue(dto, bKey);
-
-    this.assertPair(aValue, bValue, { required, ignoreCase, trim, aLbl, bLbl });
   }
 
   static assertCreateDifferent<T, KA extends keyof T, KB extends keyof T>(
@@ -98,17 +81,22 @@ export class CommonOriginDestinationPolicies {
       required?: RequireMode;
     },
   ): void {
-    const required: RequireMode = opts?.required ?? 'any';
+    const required = opts?.required ?? 'any';
     const ignoreCase = opts?.ignoreCase ?? true;
     const trim = opts?.trim ?? true;
+    const allowEqual = opts?.allowEqual ?? false;
 
     const aLbl = opts?.labels?.a ?? String(aKey);
     const bLbl = opts?.labels?.b ?? String(bKey);
 
-    const aValue = getValue(dto, aKey);
-    const bValue = getValue(dto, bKey);
-
-    this.assertPair(aValue, bValue, { required, ignoreCase, trim, aLbl, bLbl });
+    this.assertPair(getValue(dto, aKey), getValue(dto, bKey), {
+      required,
+      ignoreCase,
+      trim,
+      allowEqual,
+      aLbl,
+      bLbl,
+    });
   }
 
   static assertUpdateDifferent<T, KA extends keyof T, KB extends keyof T>(
@@ -120,9 +108,10 @@ export class CommonOriginDestinationPolicies {
       required?: RequireMode;
     },
   ): void {
-    const required: RequireMode = opts?.required ?? 'any';
+    const required = opts?.required ?? 'any';
     const ignoreCase = opts?.ignoreCase ?? true;
     const trim = opts?.trim ?? true;
+    const allowEqual = opts?.allowEqual ?? false;
 
     const aLbl = opts?.labels?.a ?? String(aKey);
     const bLbl = opts?.labels?.b ?? String(bKey);
@@ -130,9 +119,17 @@ export class CommonOriginDestinationPolicies {
     const aValue = getValue(dto, aKey);
     const bValue = getValue(dto, bKey);
 
+    // Si el DTO no trae el valor, usamos el de la base (soporta null de Prisma)
     const aEff = aValue !== undefined ? aValue : base.a;
     const bEff = bValue !== undefined ? bValue : base.b;
 
-    this.assertPair(aEff, bEff, { required, ignoreCase, trim, aLbl, bLbl });
+    this.assertPair(aEff, bEff, {
+      required,
+      ignoreCase,
+      trim,
+      allowEqual,
+      aLbl,
+      bLbl,
+    });
   }
 }
