@@ -93,9 +93,9 @@ export class ReservationsService {
         let offset = Number.isFinite(params.offset) ? Number(params.offset) : 0;
         if (offset < 0) offset = 0;
 
-        let limit = Number.isFinite(params.limit) ? Number(params.limit) : 20;
-        if (limit <= 0) limit = 20;
-        if (limit > 100) limit = 100;
+        let limit = Number.isFinite(params.limit) ? Number(params.limit) : 1000;
+        if (limit <= 0) limit = 1000;
+        if (limit > 1000) limit = 1000;
 
         // Filtro opcional por pax
         const where: Parameters<
