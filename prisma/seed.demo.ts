@@ -148,74 +148,82 @@ export async function seed(prismaService?: PrismaClient) {
     },
   });
 
-  const resMiami = await prisma.reservation.create({
-    data: {
-      name: 'Vacaciones Miami 2026',
-      userId: demoUser.id,
-      state: ReservationState.CONFIRMED,
-      createdBy: demoUser.id,
-      updatedBy: demoUser.id,
-      notes: 'Cliente VIP.',
-      currencyTotals: {
-        create: {
-          currency: Currency.USD,
-          totalPrice: 4500.0,
-          amountPaid: 2000.0,
+  console.log('🔄 Generando 30 reservas de prueba...');
+
+  for (let i = 1; i <= 30; i++) {
+    // 1. Crear la Reserva
+    const resMiami = await prisma.reservation.create({
+      data: {
+        name: `Vacaciones Miami 2026 - Demo #${i}`, // Agregamos el índice al nombre
+        userId: demoUser.id,
+        state: ReservationState.CONFIRMED,
+        createdBy: demoUser.id,
+        updatedBy: demoUser.id,
+        notes: `Reserva generada automáticamente número ${i}`,
+        currencyTotals: {
+          create: {
+            currency: Currency.USD,
+            totalPrice: 4500.0,
+            amountPaid: 2000.0,
+          },
+        },
+        paxReservations: {
+          create: [
+            { paxId: pax1.id, createdBy: demoUser.id, updatedBy: demoUser.id },
+            { paxId: pax2.id, createdBy: demoUser.id, updatedBy: demoUser.id },
+          ],
         },
       },
-      paxReservations: {
-        create: [
-          { paxId: pax1.id, createdBy: demoUser.id, updatedBy: demoUser.id },
-          { paxId: pax2.id, createdBy: demoUser.id, updatedBy: demoUser.id },
-        ],
-      },
-    },
-  });
+    });
 
-  await prisma.plane.create({
-    data: {
-      reservationId: resMiami.id,
-      bookingReference: 'AA-9988',
-      provider: 'American Airlines',
-      totalPrice: 2000.0,
-      amountPaid: 2000.0,
-      currency: Currency.USD,
-      createdBy: demoUser.id,
-      updatedBy: demoUser.id,
-      segments: {
-        create: [
-          {
-            segmentOrder: 1,
-            departure: 'EZE',
-            arrival: 'MIA',
-            departureDate: new Date('2026-05-10T21:00:00Z'),
-            arrivalDate: new Date('2026-05-11T05:00:00Z'),
-            airline: 'American Airlines',
-            flightNumber: 'AA900',
-            createdBy: demoUser.id,
-            updatedBy: demoUser.id,
-          },
-        ],
+    // 2. Crear el Avión (AHORA DENTRO DEL LOOP)
+    // Usamos resMiami.id que acaba de crearse en esta iteración
+    await prisma.plane.create({
+      data: {
+        reservationId: resMiami.id,
+        bookingReference: `AA-99${i}`, // Hacemos el código único
+        provider: 'American Airlines',
+        totalPrice: 2000.0,
+        amountPaid: 2000.0,
+        currency: Currency.USD,
+        createdBy: demoUser.id,
+        updatedBy: demoUser.id,
+        segments: {
+          create: [
+            {
+              segmentOrder: 1,
+              departure: 'EZE',
+              arrival: 'MIA',
+              departureDate: new Date('2026-05-10T21:00:00Z'),
+              arrivalDate: new Date('2026-05-11T05:00:00Z'),
+              airline: 'American Airlines',
+              flightNumber: `AA90${i}`,
+              createdBy: demoUser.id,
+              updatedBy: demoUser.id,
+            },
+          ],
+        },
       },
-    },
-  });
+    });
 
-  await prisma.hotel.create({
-    data: {
-      reservationId: resMiami.id,
-      provider: 'Expedia',
-      hotelName: 'Fontainebleau Miami',
-      city: 'Miami Beach',
-      bookingReference: 'EXP-554',
-      startDate: new Date('2026-05-11'),
-      endDate: new Date('2026-05-20'),
-      totalPrice: 2400.0,
-      amountPaid: 0,
-      currency: Currency.USD,
-      createdBy: demoUser.id,
-      updatedBy: demoUser.id,
-    },
-  });
+    // 3. Crear el Hotel (AHORA DENTRO DEL LOOP)
+    await prisma.hotel.create({
+      data: {
+        reservationId: resMiami.id,
+        provider: 'Expedia',
+        hotelName: 'Fontainebleau Miami',
+        city: 'Miami Beach',
+        bookingReference: `EXP-55${i}`,
+        startDate: new Date('2026-05-11'),
+        endDate: new Date('2026-05-20'),
+        totalPrice: 2400.0,
+        amountPaid: 0,
+        currency: Currency.USD,
+        createdBy: demoUser.id,
+        updatedBy: demoUser.id,
+      },
+    });
+  }
 
   const resBrasil = await prisma.reservation.create({
     data: {

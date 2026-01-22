@@ -104,11 +104,10 @@ export class ReservationsService {
       async () => {
         // 1. NORMALIZACIÓN DE PAGINACIÓN
         // Convertimos a número y validamos rangos para evitar errores en la DB
-        let offset = Number.isFinite(params.offset) ? Number(params.offset) : 0;
+        let offset = Number(params.offset) || 0;
         if (offset < 0) offset = 0;
 
-        // Bajamos el default a 20 para que la carga inicial sea instantánea.
-        let limit = Number.isFinite(params.limit) ? Number(params.limit) : 20;
+        let limit = Number(params.limit) || 20;
         if (limit <= 0) limit = 20;
         if (limit > 100) limit = 100;
 
@@ -133,8 +132,10 @@ export class ReservationsService {
           }),
 
           // Filtro por ESTADO (PENDING, CONFIRMED, etc.)
-          state: params.state ?? undefined,
-
+          ...(params.state &&
+            params.state.toString().trim() !== '' && {
+              state: params.state,
+            }),
           // Filtro por MONEDA (Busca si la reserva tiene totales en esa moneda)
           ...(params.currency && {
             currencyTotals: { some: { currency: params.currency } },
