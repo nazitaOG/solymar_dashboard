@@ -9,12 +9,24 @@ import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { NestStructuredLogger } from '../common/logging/structured-logger';
 import { Currency } from '@prisma/client';
+import { ReservationState } from '@prisma/client';
 
 export type FindAllReservationsParams = {
-  paxId?: string; // filtra reservas que incluyan a este PAX
-  offset?: number; // desplazamiento (default 0)
-  limit?: number; // tamaño de página (default 20, máx 100)
-  include?: string | string[]; // includes para la consulta
+  // Paginación
+  limit?: number;
+  offset?: number;
+  include?: string | string[];
+  // Filtro por pax
+  paxId?: string;
+
+  // Filtros directos
+  state?: ReservationState;
+  // Filtros por relaciones
+  passengerName?: string; // Busca en Pax
+  currency?: Currency; // Busca en ReservationCurrencyTotal
+  // Filtros por fecha
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 @Injectable()
@@ -90,31 +102,67 @@ export class ReservationsService {
   findAll(params: FindAllReservationsParams = {}) {
     return handleRequest(
       async () => {
+        // 1. NORMALIZACIÓN DE PAGINACIÓN
+        // Convertimos a número y validamos rangos para evitar errores en la DB
         let offset = Number.isFinite(params.offset) ? Number(params.offset) : 0;
         if (offset < 0) offset = 0;
 
-        let limit = Number.isFinite(params.limit) ? Number(params.limit) : 1000;
-        if (limit <= 0) limit = 1000;
-        if (limit > 1000) limit = 1000;
+        // Bajamos el default a 20 para que la carga inicial sea instantánea.
+        let limit = Number.isFinite(params.limit) ? Number(params.limit) : 20;
+        if (limit <= 0) limit = 20;
+        if (limit > 100) limit = 100;
 
-        // Filtro opcional por pax
+        // Construcción del WHERE dinámico
         const where: Parameters<
           typeof this.prisma.reservation.findMany
-        >[0]['where'] = params.paxId
-          ? { paxReservations: { some: { paxId: params.paxId } } }
-          : undefined;
+        >[0]['where'] = {
+          ...(params.paxId && {
+            paxReservations: {
+              some: { paxId: params.paxId },
+            },
+          }),
+          // Filtro por NOMBRE de pasajero (Búsqueda parcial e insensible a mayúsculas)
+          ...(params.passengerName && {
+            paxReservations: {
+              some: {
+                pax: {
+                  name: { contains: params.passengerName, mode: 'insensitive' },
+                },
+              },
+            },
+          }),
 
-        // Construcción dinámica de includes
+          // Filtro por ESTADO (PENDING, CONFIRMED, etc.)
+          state: params.state ?? undefined,
+
+          // Filtro por MONEDA (Busca si la reserva tiene totales en esa moneda)
+          ...(params.currency && {
+            currencyTotals: { some: { currency: params.currency } },
+          }),
+
+          // Filtro por RANGO DE FECHAS
+          // 'gte' es >= y 'lte' es <=
+          ...((params.dateFrom || params.dateTo) && {
+            createdAt: {
+              gte: params.dateFrom ? new Date(params.dateFrom) : undefined,
+              lte: params.dateTo ? new Date(params.dateTo) : undefined,
+            },
+          }),
+        };
+        // 3. CONSTRUCCIÓN DINÁMICA DE INCLUDES
+        // 1. Procesamos los 'includes' que vienen del front
         const includes = new Set(
           typeof params.include === 'string'
             ? params.include.split(',').map((i) => i.trim())
             : params.include || [],
         );
 
+        // 2. Definimos el objeto include con tipado estricto
         const include: Parameters<
           typeof this.prisma.reservation.findMany
         >[0]['include'] = {};
 
+        // 3. Activamos cada relación SOLO si el front la pidió
         if (includes.has('paxReservations')) {
           include.paxReservations = {
             include: {
@@ -130,32 +178,42 @@ export class ReservationsService {
           };
         }
 
-        if (includes.has('currencyTotals')) {
-          include.currencyTotals = true;
-        }
-
+        if (includes.has('currencyTotals')) include.currencyTotals = true;
         if (includes.has('hotels')) include.hotels = true;
         if (includes.has('planes')) include.planes = true;
         if (includes.has('cruises')) include.cruises = true;
         if (includes.has('transfers')) include.transfers = true;
         if (includes.has('excursions')) include.excursions = true;
         if (includes.has('medicalAssists')) include.medicalAssists = true;
+        if (includes.has('carRentals')) include.carRentals = true;
 
-        // Query principal
-        const rows = await this.prisma.reservation.findMany({
-          where,
-          orderBy: { createdAt: 'desc' },
-          skip: offset,
-          take: limit + 1,
-          include, // 👈 dinámico
-        });
-
+        // 4. EJECUCIÓN EN PARALELO (Optimización de velocidad)
+        // Lanzamos la búsqueda de datos y el conteo total al mismo tiempo.
+        const [rows, total] = await Promise.all([
+          this.prisma.reservation.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            skip: offset,
+            take: limit + 1, // Traemos uno más para el 'hasNext'
+            include,
+          }),
+          this.prisma.reservation.count({ where }), // Necesario para la paginación numérica
+        ]);
+        // 5. PROCESAMIENTO DE RESULTADOS
         const hasNext = rows.length > limit;
         const data = hasNext ? rows.slice(0, limit) : rows;
-        const nextOffset = hasNext ? offset + limit : undefined;
 
+        // 6. RETORNO DE DATA + METADATA
         return {
-          meta: { offset, limit, hasNext, nextOffset },
+          meta: {
+            offset,
+            limit,
+            total, // Cantidad total de registros que cumplen el filtro
+            hasNext,
+            totalPages: Math.ceil(total / limit),
+            page: Math.floor(offset / limit) + 1,
+            nextOffset: hasNext ? offset + limit : undefined,
+          },
           data,
         };
       },
