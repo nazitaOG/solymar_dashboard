@@ -10,6 +10,7 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { PaxPolicies } from './policies/pax.policies';
 import { hasPrimary } from '../common/utils/value-guards';
 import { NestStructuredLogger } from '../common/logging/structured-logger';
+import { Prisma } from '@prisma/client';
 
 export type FindAllPaxParams = {
   include?: string | string[];
@@ -103,7 +104,6 @@ export class PaxService {
     return handleRequest(
       async () => {
         // 1. NORMALIZACIÓN DE PAGINACIÓN
-        // Convertimos a número y validamos rangos
         let offset = Number(params.offset) || 0;
         if (offset < 0) offset = 0;
 
@@ -111,14 +111,48 @@ export class PaxService {
         if (limit <= 0) limit = 20;
         if (limit > 100) limit = 100;
 
-        // 2. CONSTRUCCIÓN DEL WHERE DINÁMICO
-        // Usamos el tipado estricto de Prisma para evitar errores de tipo en el objeto
-        const where: Parameters<typeof this.prisma.pax.findMany>[0]['where'] = {
-          // Filtro por NOMBRE (name)
-          ...(params.name &&
-            params.name.trim() !== '' && {
-              name: { contains: params.name.trim(), mode: 'insensitive' },
-            }),
+        // 🧠 2. LÓGICA DE BÚSQUEDA INTELIGENTE
+        let fuzzyIds: string[] | null = null;
+
+        if (params.name && params.name.trim().length > 0) {
+          // A. Dividimos el input en palabras: "Lioenl Messy" -> ["Lioenl", "Messy"]
+          const terms = params.name.trim().split(/\s+/).filter(Boolean);
+
+          if (terms.length > 0) {
+            // B. Creamos una condición SQL por cada palabra.
+            // Cada palabra debe cumplirse (AND) para que el registro sea válido.
+            // Usamos word_similarity > 0.35 para tolerar errores como "Mesi" o "Lioenl".
+            const conditions = terms.map(
+              (term) => Prisma.sql`
+              (
+                name ILIKE ${`%${term}%`} 
+                OR 
+                word_similarity(${term}, name) > 0.35
+              )
+            `,
+            );
+
+            // C. Unimos todas las condiciones con AND
+            const whereClause = Prisma.join(conditions, ' AND ');
+
+            // D. Ejecutamos la query cruda
+            const rawResults = await this.prisma.$queryRaw<{ id: string }[]>`
+              SELECT id 
+              FROM "Pax" 
+              WHERE ${whereClause}
+            `;
+
+            fuzzyIds = rawResults.map((r) => r.id);
+          }
+        }
+
+        // 3. CONSTRUCCIÓN DEL WHERE DINÁMICO (Prisma)
+        const where: Prisma.PaxWhereInput = {
+          // ✅ APLICACIÓN DEL FILTRO DE IDs
+          // Si fuzzyIds no es null, filtramos por esos IDs encontrados.
+          ...(fuzzyIds !== null && {
+            id: { in: fuzzyIds },
+          }),
 
           // Filtro por NACIONALIDAD
           ...(params.nationality &&
@@ -129,7 +163,7 @@ export class PaxService {
               },
             }),
 
-          // Filtro por TIPO DE DOCUMENTO (Lógica condicional)
+          // Filtro por TIPO DE DOCUMENTO
           ...(params.documentFilter === 'with-dni' && {
             dni: { isNot: null },
           }),
@@ -138,27 +172,19 @@ export class PaxService {
           }),
         };
 
-        // 3. CONSTRUCCIÓN DINÁMICA DE INCLUDES
-        // Procesamos los includes que vienen del front (string o array)
+        // 4. CONSTRUCCIÓN DINÁMICA DE INCLUDES
         const includes = new Set(
           typeof params.include === 'string'
             ? params.include.split(',').map((i) => i.trim())
             : params.include || [],
         );
 
-        // Definimos el objeto include con tipado estricto
-        const include: Parameters<
-          typeof this.prisma.pax.findMany
-        >[0]['include'] = {};
-
-        // Activamos relaciones solo si se piden
+        const include: Prisma.PaxInclude = {};
         if (includes.has('passport')) include.passport = true;
         if (includes.has('dni')) include.dni = true;
-        // Si tienes PaxReservations y quisieras incluirlas:
         if (includes.has('paxReservations')) include.paxReservations = true;
 
-        // 4. EJECUCIÓN EN PARALELO
-        // Traemos data (limit + 1 para calcular hasNext) y el total count
+        // 5. EJECUCIÓN EN PARALELO
         const [rows, total] = await Promise.all([
           this.prisma.pax.findMany({
             where,
@@ -170,11 +196,10 @@ export class PaxService {
           this.prisma.pax.count({ where }),
         ]);
 
-        // 5. PROCESAMIENTO DE RESULTADOS
+        // 6. RETORNO DE DATA + METADATA
         const hasNext = rows.length > limit;
         const data = hasNext ? rows.slice(0, limit) : rows;
 
-        // 6. RETORNO DE DATA + METADATA
         return {
           meta: {
             offset,
