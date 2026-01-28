@@ -11,6 +11,16 @@ import { PaxPolicies } from './policies/pax.policies';
 import { hasPrimary } from '../common/utils/value-guards';
 import { NestStructuredLogger } from '../common/logging/structured-logger';
 
+export type FindAllPaxParams = {
+  include?: string | string[];
+  offset?: number | string;
+  limit?: number | string;
+  // Filtros
+  name?: string;
+  nationality?: string;
+  documentFilter?: 'all' | 'with-dni' | 'with-passport';
+};
+
 @Injectable()
 export class PaxService {
   private readonly logger = new NestStructuredLogger();
@@ -89,16 +99,105 @@ export class PaxService {
     );
   }
 
-  findAll() {
+  async findAll(params: FindAllPaxParams = {}) {
     return handleRequest(
-      () =>
-        this.prisma.pax.findMany({
-          orderBy: { createdAt: 'desc' }, // antes usabas uploadDate
-          include: { passport: true, dni: true },
-        }),
+      async () => {
+        // 1. NORMALIZACIÓN DE PAGINACIÓN
+        // Convertimos a número y validamos rangos
+        let offset = Number(params.offset) || 0;
+        if (offset < 0) offset = 0;
+
+        let limit = Number(params.limit) || 20;
+        if (limit <= 0) limit = 20;
+        if (limit > 100) limit = 100;
+
+        // 2. CONSTRUCCIÓN DEL WHERE DINÁMICO
+        // Usamos el tipado estricto de Prisma para evitar errores de tipo en el objeto
+        const where: Parameters<typeof this.prisma.pax.findMany>[0]['where'] = {
+          // Filtro por NOMBRE (name)
+          ...(params.name &&
+            params.name.trim() !== '' && {
+              name: { contains: params.name.trim(), mode: 'insensitive' },
+            }),
+
+          // Filtro por NACIONALIDAD
+          ...(params.nationality &&
+            params.nationality !== 'all' && {
+              nationality: {
+                equals: params.nationality,
+                mode: 'insensitive',
+              },
+            }),
+
+          // Filtro por TIPO DE DOCUMENTO (Lógica condicional)
+          ...(params.documentFilter === 'with-dni' && {
+            dni: { isNot: null },
+          }),
+          ...(params.documentFilter === 'with-passport' && {
+            passport: { isNot: null },
+          }),
+        };
+
+        // 3. CONSTRUCCIÓN DINÁMICA DE INCLUDES
+        // Procesamos los includes que vienen del front (string o array)
+        const includes = new Set(
+          typeof params.include === 'string'
+            ? params.include.split(',').map((i) => i.trim())
+            : params.include || [],
+        );
+
+        // Definimos el objeto include con tipado estricto
+        const include: Parameters<
+          typeof this.prisma.pax.findMany
+        >[0]['include'] = {};
+
+        // Activamos relaciones solo si se piden
+        if (includes.has('passport')) include.passport = true;
+        if (includes.has('dni')) include.dni = true;
+        // Si tienes PaxReservations y quisieras incluirlas:
+        if (includes.has('paxReservations')) include.paxReservations = true;
+
+        // 4. EJECUCIÓN EN PARALELO
+        // Traemos data (limit + 1 para calcular hasNext) y el total count
+        const [rows, total] = await Promise.all([
+          this.prisma.pax.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            skip: offset,
+            take: limit + 1,
+            include,
+          }),
+          this.prisma.pax.count({ where }),
+        ]);
+
+        // 5. PROCESAMIENTO DE RESULTADOS
+        const hasNext = rows.length > limit;
+        const data = hasNext ? rows.slice(0, limit) : rows;
+
+        // 6. RETORNO DE DATA + METADATA
+        return {
+          meta: {
+            offset,
+            limit,
+            total,
+            hasNext,
+            totalPages: Math.ceil(total / limit),
+            page: Math.floor(offset / limit) + 1,
+            nextOffset: hasNext ? offset + limit : undefined,
+          },
+          data,
+        };
+      },
       this.logger,
       {
         op: 'PaxService.findAll',
+        extras: {
+          name: params.name,
+          nationality: params.nationality,
+          docFilter: params.documentFilter,
+          offset: params.offset,
+          limit: params.limit,
+        },
       },
     );
   }

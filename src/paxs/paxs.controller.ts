@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { PaxService } from './paxs.service';
@@ -14,6 +15,7 @@ import { UpdatePaxDto } from './dto/update-pax.dto';
 import { Auth } from '@/auth/decorators/auth.decorator';
 import { GetUser } from '@/auth/decorators/get-user.decorator';
 import { User } from '@prisma/client';
+import { FindAllPaxParams } from './paxs.service';
 
 @Auth()
 @Controller('pax')
@@ -26,8 +28,8 @@ export class PaxController {
   }
 
   @Get()
-  findAll() {
-    return this.paxService.findAll();
+  findAll(@Query() params: FindAllPaxParams) {
+    return this.paxService.findAll(params);
   }
 
   @Get(':id')
